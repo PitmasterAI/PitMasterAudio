@@ -24,7 +24,7 @@ El motor principal va en **CPU** y el secundario en **GPU**, así que una pista 
 | | |
 |---|---|
 | **Versión** | 1.0 |
-| **Plataformas** | Linux (deb, AppImage) · Windows 10/11 (instalador, portable, ZIP) · Android 7+ (APK, AAB) |
+| **Plataformas** | Linux (deb, AppImage) · Windows 10/11 (instalador, portable, ZIP) · Android 7+ (APK) |
 | **Idiomas** | Español e inglés (detecta el idioma la primera vez y lo recuerda) |
 | **Dependencias** | Ninguna cuenta, ninguna nube, ninguna suscripción |
 
@@ -109,7 +109,7 @@ todo, incluido el proceso de sonido.
 
 **Android**
 
-Instala `PitMasterAudio-1.0.apk` (para probar a mano). El `.aab` es para Google Play.
+Descarga e instala `PitMasterAudio-1.0.apk`.
 
 ### Privacidad
 
@@ -124,7 +124,7 @@ dsp.py, motor.py, paralelo.py, gpuops.py, vk_compute.py, aceleracion.py, presets
 vk/                 Shaders de Vulkan compute.
 app/                Panel local (Flask + HTML/JS) y motor de sonido propio (portaudio).
 android/            App Android nativa (Java + NDK).
-empaquetado/        Scripts de compilación: deb, AppImage, Windows, portable, APK, AAB.
+empaquetado/        Scripts de compilación: deb, AppImage, Windows, portable y APK.
 docs/               Arquitectura y notas técnicas.
 capturas/           Capturas de la aplicación.
 ```
@@ -145,7 +145,6 @@ python3 empaquetado/build_portable.py
 
 # Android (aapt2 + javac + d8 + apksigner, sin Gradle)
 python3 empaquetado/build_apk.py
-python3 empaquetado/build_aab.py
 ```
 
 ### Licencia
@@ -168,7 +167,7 @@ minute track takes seconds, not minutes.
 | | |
 |---|---|
 | **Version** | 1.0 |
-| **Platforms** | Linux (deb, AppImage) · Windows 10/11 (installer, portable, ZIP) · Android 7+ (APK, AAB) |
+| **Platforms** | Linux (deb, AppImage) · Windows 10/11 (installer, portable, ZIP) · Android 7+ (APK) |
 | **Languages** | Spanish and English (detected on first run, then remembered) |
 | **Requirements** | No account, no cloud, no subscription |
 
@@ -242,7 +241,7 @@ down, including the audio process.
 
 **Android**
 
-Install `PitMasterAudio-1.0.apk` (for manual testing). The `.aab` is for Google Play.
+Download and install `PitMasterAudio-1.0.apk`.
 
 ### Privacy
 
@@ -257,7 +256,7 @@ dsp.py, motor.py, paralelo.py, gpuops.py, vk_compute.py, aceleracion.py, presets
 vk/                 Vulkan compute shaders.
 app/                Local panel (Flask + HTML/JS) and its own sound engine (portaudio).
 android/            Native Android app (Java + NDK).
-empaquetado/        Build scripts: deb, AppImage, Windows, portable, APK, AAB.
+empaquetado/        Build scripts: deb, AppImage, Windows, portable and APK.
 docs/               Architecture and technical notes.
 capturas/           Application screenshots.
 ```
@@ -278,7 +277,6 @@ python3 empaquetado/build_portable.py
 
 # Android (aapt2 + javac + d8 + apksigner, no Gradle)
 python3 empaquetado/build_apk.py
-python3 empaquetado/build_aab.py
 ```
 
 ### License
