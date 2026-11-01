@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PitMasterAudio</title>
+<link rel="icon" type="image/png" href="/static/pitmasteraudio.png">
+<link rel="stylesheet" href="/static/style.css?v=65">
+<script>
+  // si algo falla en el navegador (aunque sea un error de sintaxis en app.js) se
+  // manda al servidor para poder mirarlo desde otro equipo
+  window.addEventListener('error', function (e) {
+    try {
+      if (!e || !e.message) { return; }
+      navigator.sendBeacon('/api/consola', JSON.stringify({
+        tipo: 'error-temprano', mensaje: String(e && e.message), fichero: e && e.filename,
+        linea: e && e.lineno, navegador: navigator.userAgent
+      }));
+    } catch (x) {}
+  }, true);
+</script>
+</head>
+<body>
+
+<!-- cabecera con degradado, igual que la app -->
+<header class="cabecera">
+  <div class="cabecera-texto">
+    <h1>PitMasterAudio</h1>
+    <p>Remasterizado de Audio por Ecualización</p>
+  </div>
+  <div class="derecha">
+    <div class="banderas" id="banderas">
+      <button class="bandera" id="btnIdiomaEs" data-idioma="es" title="Español">🇪🇸</button>
+      <button class="bandera" id="btnIdiomaEn" data-idioma="en" title="English">🇬🇧</button>
+    </div>
+    <div class="motor">
+      <span id="motorPrincipal">Motor principal: CPU</span><br>
+      <span id="motorSecundario">Motor secundario: GPU</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- elegir audio -->
+  <section class="tarjeta" id="zonaSubida">
+    <button class="boton-principal" id="btnElegir">Elegir audio</button>
+    <p class="aviso">***No se recomienda subir audio ya remasterizado***</p>
+    <p class="archivo" id="nombreTema">Ningún audio elegido</p>
+    <div class="barra quieta" id="barraSubida"><div class="barra-relleno indeterminada"></div></div>
+    <input type="file" id="archivo" accept="audio/*" hidden>
+  </section>
+
+  <!-- qué se ha analizado -->
+  <section class="tarjeta" id="panelAnalisis">
+    <h2 class="titulo cian">Qué se ha analizado</h2>
+    <p class="detalle" id="perfilAudio">Sube una canción para verlo</p>
+    <p class="detalle" id="pistaRecomendado"></p>
+  </section>
+
+  <!-- comparar -->
+  <section class="tarjeta oculto" id="panelTema">
+    <h2 class="titulo rosa">Comparar</h2>
+    <div class="caja-onda"><canvas id="onda" height="120"></canvas></div>
+    <div class="conmutador" id="conmutador">
+      <button class="opcion activa" data-cual="original">Original</button>
+      <button class="opcion" data-cual="master">Masterizado</button>
+    </div>
+    <div class="acciones">
+      <button class="boton-escuchar" id="btnEscuchar">▶ Escuchar</button>
+      <a class="boton-descargar" id="btnDescargar" href="#">Descargar</a>
+    </div>
+    <p class="sonando" id="detalleTema"></p>
+    <p class="detalle" id="estadoTrabajo"></p>
+    <audio id="audioOriginal" preload="auto" class="oculto"></audio>
+    <!-- dos reproductores para el masterizado: el nuevo se carga en el que no suena -->
+    <audio id="audioMaster" preload="auto" class="oculto"></audio>
+    <audio id="audioMaster2" preload="auto" class="oculto"></audio>
+  </section>
+
+  <!-- ajustes -->
+  <section class="tarjeta oculto" id="panelOpciones">
+    <h2 class="titulo naranja">Habituales</h2>
+    <p class="detalle">Empiezas con Amplificador. Toca otro para cambiarlo.</p>
+    <div class="rejilla" id="listaDestacados"></div>
+
+    <div class="caja-recomendadas oculto" id="cajaRecomendada">
+      <h2 class="titulo rosa">Recomendadas por tipo de audio</h2>
+      <div class="rejilla" id="listaRecomendadas"></div>
+    </div>
+
+    <button class="boton-secundario ancho" id="btnVariaciones">Más variaciones (23) ▾</button>
+    <div class="columna oculto" id="listaOpciones"></div>
+  </section>
+
+  <section class="tarjeta" id="panelFinos">
+    <details class="finos" id="detalleFinos">
+      <summary id="resumenFinos">Ajustes finos ▸</summary>
+
+      <div class="fila-etiqueta">
+        <span>Sonoridad (LUFS)</span>
+        <button class="boton-opcion interruptor" id="btnAuto">Auto ✓</button>
+      </div>
+      <input type="range" class="deslizador" id="barraLufs" min="-24" max="-6" step="0.1" value="-10">
+      <input type="text" inputmode="decimal" class="campo-fino" id="lufs" value="-10.0">
+
+      <div class="fila-etiqueta">
+        <span id="etiquetaIntensidad">Intensidad del efecto: 100 %</span>
+        <button class="boton-opcion interruptor" id="btnFijo">Fijo ✓</button>
+      </div>
+      <input type="range" class="deslizador" id="barraIntensidad" min="0" max="120" step="1" value="100">
+      <input type="text" inputmode="numeric" class="campo-fino" id="campoIntensidad" value="100">
+    </details>
+  </section>
+
+  <footer>
+    <span class="marca-pie"><a href="https://www.pitmasterai.es" data-fuera>PitmasterAI</a> ·
+      <a href="https://www.iaradio.es" data-fuera>IAradio.ES</a></span>
+    <a class="boton-donar" href="https://www.paypal.com/paypalme/PitmasterAI" data-fuera
+       target="_blank" rel="noopener">♥ Donar</a>
+  </footer>
+</main>
+
+
+</div>
+
+<script src="/static/idioma.js?v=1"></script>
+<script src="/static/app.js?v=35"></script>
+</body>
+</html>

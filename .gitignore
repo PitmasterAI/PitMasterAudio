@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Datos de trabajo del panel (audios subidos, salidas y logs)
+app/data/
+app/*.log
+datos/
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.ogg
+*.aif
+*.aiff
+
+# Claves de firma (NUNCA al repositorio)
+*.keystore
+*.jks
+keystore_password.txt
+*.pem
+*.p12
+
+# Artefactos de compilación
+dist/
+build/
+*.deb
+*.AppImage
+*.apk
+*.aab
+*.exe
+*.zip
+*.tar.gz
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.swp

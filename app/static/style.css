@@ -1,0 +1,233 @@
+/* PitMasterAudio — calcado de la app Android */
+:root {
+  --fondo: #08080D;
+  --tarjeta: #14121B;
+  --borde: #26232F;
+  --texto: #F4F4FA;
+  --suave: #A6ABBD;
+  --rosa: #E30B5D;
+  --cian: #22D3EE;
+  --cian-boton: #29C5E8;
+  --naranja: #F97316;
+  --violeta: #7C3AED;
+  --boton: #232333;
+  --verde: #10E8C1;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 12px 12px 22px;
+  background: var(--fondo); color: var(--texto);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px; line-height: 1.45;
+}
+h1, h2 { margin: 0; font-weight: 700; }
+.oculto { display: none !important; }
+/* En horizontal, un cuarto de pantalla de margen a cada lado (los dos iguales):
+   el contenido queda centrado. En vertical ocupa todo el ancho. */
+@media (orientation: landscape) {
+  body { padding-left: 25vw; padding-right: 25vw; }
+}
+
+/* como la app: las tarjetas ocupan todo el ancho, en vertical y en horizontal */
+main, .cabecera { width: 100%; margin: 0 0 14px; }
+
+.version-panel {
+  font-size: 12px; font-weight: 500; opacity: .6; margin-left: 8px;
+  letter-spacing: .3px; vertical-align: middle;
+}
+
+/* cabecera degradada */
+.cabecera {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
+  padding: 20px 20px 16px; margin-bottom: 14px; border-radius: 24px;
+  background: linear-gradient(105deg, #E00E5C 0%, #C1129B 55%, #7B2BE8 100%);
+}
+.cabecera h1 { font-size: 30px; letter-spacing: .1px; color: #fff; }
+.cabecera p { margin: 6px 0 0; font-size: 13px; color: rgba(255, 255, 255, .92); }
+.motor {
+  font-size: 13px; line-height: 1.5; text-align: right;
+  color: rgba(255, 255, 255, .95); white-space: nowrap; margin-bottom: 2px;
+}
+.motor .estado { display: block; font-size: 11px; opacity: .8; margin-top: 2px; }
+
+/* tarjetas */
+.tarjeta {
+  background: var(--tarjeta); border: 1px solid var(--borde);
+  border-radius: 24px; padding: 18px; margin-bottom: 14px;
+}
+.titulo { font-size: 17px; margin: 0 0 8px; }
+.titulo.cian { color: var(--cian); }
+.titulo.rosa { color: var(--rosa); }
+.titulo.naranja { color: var(--naranja); }
+.detalle { color: var(--suave); font-size: 14px; margin: 8px 0 0; }
+.sonando { font-size: 14px; color: var(--texto); margin: 12px 0 0; text-align: center; }
+.archivo { text-align: center; font-size: 14px; color: var(--suave); margin: 12px 0 0; }
+.aviso {
+  text-align: center; font-style: italic; font-size: 13px;
+  color: var(--suave); margin: 14px 0 0;
+}
+
+/* botones */
+.boton-principal {
+  display: block; width: 100%; border: 0; cursor: pointer;
+  background: var(--rosa); color: #fff; font-weight: 700; font-size: 17px;
+  border-radius: 22px; padding: 17px;
+}
+.boton-principal:active { filter: brightness(.92); }
+.boton-secundario {
+  display: inline-block; cursor: pointer; text-decoration: none; text-align: center;
+  background: var(--boton); color: var(--texto); font-size: 17px;
+  border: 1px solid var(--borde); border-radius: 22px; padding: 16px;
+}
+.boton-secundario.ancho { display: block; width: 100%; margin-top: 14px; }
+.boton-opcion {
+  cursor: pointer; background: var(--boton); color: var(--texto);
+  border: 1px solid var(--borde); border-radius: 12px; padding: 9px 12px; font-size: 13px;
+}
+.boton-opcion.activa { border-color: var(--rosa); color: #fff; background: #2A1520; }
+
+/* tarjetas de ajuste: nombre centrado y su icono a la derecha, igual que la app */
+.tarjeta-opcion {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  min-height: 56px; padding: 12px 34px; font-size: 15px; text-align: center;
+}
+.tarjeta-opcion.activa { background: var(--rosa); border-color: var(--rosa); color: #fff; font-weight: 700; }
+.icono-preset {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  width: 18px; height: 18px; display: block;
+}
+.icono-preset.giro {
+  /* el aro tiene que verse girar de un vistazo: dos bordes encendidos y el resto tenue */
+  border: 2.4px solid rgba(16, 232, 193, .20);
+  border-top-color: var(--verde); border-right-color: rgba(16, 232, 193, .70);
+  border-radius: 50%;
+  animation: girar-icono .8s linear infinite;
+}
+.icono-preset.visto::after {
+  content: "✓"; position: absolute; inset: 0;
+  color: var(--verde); font-size: 19px; font-weight: 700; line-height: 18px; text-align: center;
+}
+/* El from y el to llevan la MISMA lista de funciones: si solo se pone el `to`,
+   WebKit descompone las matrices, 360° equivale a identidad y el aro no gira. */
+@keyframes girar-icono {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to   { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* comparar */
+.caja-onda {
+  background: #0E0D14; border: 1px solid var(--borde); border-radius: 14px;
+  padding: 10px; margin-bottom: 16px;
+}
+#onda { width: 100%; height: 120px; display: block; }
+.conmutador { display: flex; gap: 12px; }
+.conmutador .opcion {
+  flex: 1; cursor: pointer; padding: 17px; border-radius: 22px;
+  background: var(--boton); color: var(--texto); border: 1px solid var(--borde); font-size: 17px;
+}
+/* el activado (Original o Masterizado) va en rojo, como los ajustes elegidos */
+.conmutador .opcion.activa { background: var(--rosa); border-color: var(--rosa); color: #fff; font-weight: 700; }
+.conmutador .opcion[disabled] { opacity: .38; cursor: default; }
+.acciones { display: flex; gap: 12px; margin-top: 14px; }
+.boton-escuchar, .boton-descargar {
+  flex: 1; cursor: pointer; border: 0; border-radius: 24px; padding: 18px;
+  font-size: 18px; font-weight: 700; text-align: center; text-decoration: none;
+}
+.boton-escuchar { background: var(--rosa); color: #fff; }
+.boton-descargar { background: var(--cian-boton); color: #06232B; }
+.descargas { display: flex; gap: 10px; margin-top: 12px; }
+.descargas > * { flex: 1; }
+.reproductor { width: 100%; margin-top: 10px; }
+
+/* rejillas */
+.rejilla { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.columna { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.rejilla-fina { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 14px; }
+.fila-botones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.fila-etiqueta {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-top: 14px; font-size: 14px;
+}
+
+/* recomendadas */
+.caja-recomendadas {
+  margin-top: 16px; padding: 12px; border-radius: 16px;
+  background: #21121A; border: 1px solid var(--rosa);
+}
+
+/* progreso: solo cuando hay algo en marcha */
+.barra { height: 6px; background: var(--boton); border-radius: 6px; overflow: hidden; margin-top: 12px; }
+.barra.quieta { display: none; }
+.barra-relleno { height: 100%; width: 0; background: var(--rosa); transition: width .2s; }
+.barra-relleno.indeterminada {
+  width: 40%;
+  animation: recorrer 1.1s ease-in-out infinite;
+}
+@keyframes recorrer {
+  0% { margin-left: -40%; }
+  100% { margin-left: 100%; }
+}
+
+/* ajustes finos */
+.finos > summary {
+  cursor: pointer; text-align: center; font-weight: 700; font-size: 20px;
+  padding: 22px 0; list-style: none; color: var(--texto);
+}
+.finos > summary::-webkit-details-marker { display: none; }
+label { font-size: 13px; color: var(--suave); display: block; }
+input[type="number"], select {
+  width: 100%; margin-top: 4px; padding: 12px; border-radius: 14px;
+  background: var(--boton); color: var(--texto); border: 1px solid var(--borde); font-size: 15px;
+}
+.campo-fino {
+  margin-top: 6px; padding: 14px; border-radius: 16px; font-size: 16px;
+  background: #1B1926; border: 1px solid var(--borde); color: var(--texto);
+}
+/* deslizador fino, como el de la app */
+.deslizador {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 22px;
+  background: transparent; margin: 6px 0 0; cursor: pointer;
+}
+.deslizador::-webkit-slider-runnable-track {
+  height: 3px; border-radius: 3px; background: #3A3750;
+}
+.deslizador::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 14px; height: 14px;
+  border-radius: 50%; background: #6E6A85; border: 0; margin-top: -5.5px;
+}
+.deslizador::-moz-range-track { height: 3px; border-radius: 3px; background: #3A3750; }
+.deslizador::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 50%; background: #6E6A85; }
+/* interruptores Auto y Fijo: en cian cuando están puestos */
+.interruptor {
+  background: var(--boton); color: var(--texto); font-size: 14px;
+  border-radius: 18px; padding: 8px 16px; font-weight: 600;
+}
+.interruptor.activo { background: var(--cian-boton); border-color: var(--cian-boton); color: #06232B; font-weight: 700; }
+/* control bloqueado: se oscurece de verdad, no solo se desactiva */
+.bloqueado { opacity: .34; pointer-events: none; }
+#estadoTrabajo { text-align: center; }
+
+/* pie */
+footer { text-align: center; margin-top: 18px; }
+.marca-pie { color: var(--suave); font-size: 13px; margin: 0 0 12px;
+  display: inline-block; }
+.marca-pie a { color: var(--suave); text-decoration: none; }
+.marca-pie a:hover { color: var(--texto); }
+.boton-donar {
+  display: block; color: #fff; background: var(--violeta); text-decoration: none;
+  border-radius: 22px; padding: 17px; font-size: 17px; font-weight: 600;
+}
+
+.encima { outline: 2px dashed var(--rosa); outline-offset: -6px; }
+
+/* columna derecha de la cabecera: banderas arriba, motores debajo */
+.derecha { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+
+/* banderas del idioma: la activa en rosa, la otra oscura */
+.banderas { display: flex; gap: 6px; }
+.bandera {
+  width: 46px; height: 32px; border-radius: 12px; font-size: 15px; line-height: 1;
+  background: rgba(0, 0, 0, .28); color: #fff; border: 1px solid rgba(255, 255, 255, .30);
+  cursor: pointer; padding: 0;
+}
+.bandera.activa { background: var(--rosa); border-color: #fff; }
