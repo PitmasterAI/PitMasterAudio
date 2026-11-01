@@ -12,7 +12,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-/* loaded from: classes.dex */
 public final class Registro {
     private static File archivo;
 
@@ -24,8 +23,8 @@ public final class Registro {
             }
             archivo = new File(externalFilesDir, "pitmasteraudio.log");
             escribir("=== MasterLab " + datosVersion(context) + " en " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ") ===");
-            Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() { // from class: es.pitmasterai.masterlab.Registro.1
-                @Override // java.lang.Thread.UncaughtExceptionHandler
+            Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() { 
+                @Override 
                 public void uncaughtException(Thread thread, Throwable th) {
                     StringWriter stringWriter = new StringWriter();
                     th.printStackTrace(new PrintWriter(stringWriter));

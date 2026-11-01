@@ -2,7 +2,6 @@ package es.pitmasterai.masterlab.motor;
 
 import es.pitmasterai.masterlab.motor.Compresor;
 
-/* loaded from: classes.dex */
 public final class Preset {
     public final String clave;
     public final Compresor.Ajuste compAlto;

@@ -1,9 +1,8 @@
 package es.pitmasterai.masterlab.motor;
 
-/* loaded from: classes.dex */
 public final class Compresor {
 
-    /* loaded from: classes.dex */
+    
     public static final class Ajuste {
         public final float ataqueMs;
         public final float liberacionMs;

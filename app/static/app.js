@@ -1,10 +1,7 @@
 'use strict';
 
-// mismos ajustes destacados que la app: Claro y Retro (fijos)
 const DESTACADOS = ['base_claro', 'base_retro'];
 
-// Lo que falle en el navegador se manda al servidor: así se puede mirar qué pasa en
-// un equipo al que no se llega (Windows, otro Linux) sin depender de que se vea.
 const AVISAR = (dato) => {
   try {
     fetch('/api/consola', {
@@ -16,7 +13,7 @@ const AVISAR = (dato) => {
         pantalla: window.innerWidth + 'x' + window.innerHeight,
       }, dato)),
     }).catch(() => {});
-  } catch (e) { /* sin conexión */ }
+  } catch (e) {  }
 };
 window.addEventListener('error', (e) => {
   AVISAR({ tipo: 'error', mensaje: String(e.message), fichero: e.filename, linea: e.lineno });
@@ -37,17 +34,15 @@ const S = {
 };
 
 const signo = (v) => (v > 0 ? '+' : '') + Number(v).toFixed(1);
-// la app escribe los números de los textos con coma decimal
+
 const coma = (v, dec) => Number(v).toFixed(dec).replace('.', ',');
 
-// misma frase que la app: «Amplificador · -12,2 LUFS · pico -0,30 dBTP»
 function fmtSonando(titulo, lufs, tp) {
   if (lufs === undefined || lufs === null) return titulo;
   if (tp === undefined || tp === null) return `${T(titulo)} · ${coma(lufs, 1)} LUFS`;
   return `${T(titulo)} · ${coma(lufs, 1)} LUFS · ${T('pico')} ${coma(tp, 2)} dBTP`;
 }
 
-// misma frase que la app: «-16.4 LUFS · cresta 16.8 dB · estéreo 0.87 · graves +4.4 dB · agudos -6.8 dB»
 function fmtPerfil(p) {
   if (!p) return '';
   return `${coma(p.lufs, 1)} LUFS · cresta ${coma(p.cresta, 1)} dB · ` +
@@ -55,21 +50,14 @@ function fmtPerfil(p) {
     `${T('agudos')} ${signo(p.agudos_db).replace('.', ',')} dB`;
 }
 
-// «Motor principal: GPU» / «Motor secundario: CPU», como en la app
 async function mirarMotores() {
   try {
     const j = await (await fetch('/api/motor')).json();
     $('#motorPrincipal').textContent = T('Motor principal: ') + j.principal;
     $('#motorSecundario').textContent = T('Motor secundario: ') + j.secundario;
-  } catch (e) { /* se queda el texto por defecto */ }
+  } catch (e) {  }
 }
 
-
-
-/**
- * El panel arranca en blanco: no se retoma la canción de la vez anterior ni se
- * queda sonando nada de una sesión vieja. Se decide así expresamente.
- */
 async function arrancarEnLimpio() {
   S.id = null;
   S.presets = [];
@@ -88,8 +76,8 @@ async function arrancarEnLimpio() {
   try {
     const j = await (await fetch('/api/repro/estado')).json();
     REPRO.leer(j);
-    if (j && j.sonando) await REPRO.mando('parar');   // nada suena al abrir
-  } catch (e) { /* sin sonido propio */ }
+    if (j && j.sonando) await REPRO.mando('parar');   
+  } catch (e) {  }
   REPRO.pos = 0;
   REPRO.dur = 0;
   ['#panelTema', '#panelOpciones', '#cajaRecomendada'].forEach((sel) => {
@@ -109,8 +97,6 @@ async function arrancarEnLimpio() {
   dibujarOnda(new Array(220).fill(0.06), 0);
 }
 
-// ------------------------------------------------------------------ idioma
-/** Pinta la recomendación con el nombre traducido. */
 function pintarPista() {
   const nombre = S.sugerido || '';
   $('#pistaRecomendado').textContent = (nombre && nombre !== 'Claro')
@@ -118,14 +104,12 @@ function pintarPista() {
     : T('Empiezas con Claro; cámbialo cuando quieras.');
 }
 
-/** Banderas: la del idioma activo en rosa. */
 function pintarBanderas() {
   document.querySelectorAll('#banderas .bandera').forEach((b) => {
     b.classList.toggle('activa', b.dataset.idioma === IDIOMA.valor);
   });
 }
 
-/** Traduce los textos fijos que hay escritos en el HTML. */
 function traducirNodos(raiz) {
   const paseo = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, null);
   const cambios = [];
@@ -145,10 +129,6 @@ function traducirNodos(raiz) {
   cambios.forEach(([n, valor]) => { n.nodeValue = valor; });
 }
 
-/**
- * Cambia todos los textos al idioma elegido SIN recargar ni tocar el audio
- * (el sonido lo lleva el servidor, así que aquí solo se repinta la pantalla).
- */
 function aplicarIdioma() {
   document.documentElement.lang = IDIOMA.valor;
   traducirNodos(document.body);
@@ -169,7 +149,6 @@ function aplicarIdioma() {
   }
 }
 
-/** Si al reabrir no ha arrancado en 1,2 s, se reintenta una vez. */
 function vigilarArranque() {
   if (!S.nativo) return;
   setTimeout(() => {
@@ -177,7 +156,6 @@ function vigilarArranque() {
   }, 1200);
 }
 
-// ------------------------------------------------------------------ subir
 async function subir(archivo) {
   const fd = new FormData();
   fd.append('audio', archivo);
@@ -206,7 +184,7 @@ async function subir(archivo) {
     S.picosMaster = null;
     S.viendoOriginal = true;
     marcarMasterListo(false);
-    // los dos reproductores de masterizado empiezan de cero con la canción nueva
+    
     $('#audioMaster').src = '';
     $('#audioMaster2').src = '';
     $('#audioMaster').classList.add('oculto');
@@ -229,17 +207,12 @@ async function subir(archivo) {
     pintarOnda();
     cambiarAudio('original', false);
     aplicarAuto(null);
-    masterizar('base_claro');        // todos los sistemas empiezan en Claro
+    masterizar('base_claro');        
   } finally {
     $('#barraSubida').classList.add('quieta');
   }
 }
 
-// ------------------------------------------------------------------ onda
-// Onda de una versión concreta (la original o la masterizada que toque).
-// Escala absoluta, como la app: 1,0 es el máximo reproducible, no se normaliza.
-// Los picos los calcula el servidor: antes el panel se bajaba el WAV entero y lo
-// decodificaba en la ventana, y ese pico de CPU era una de las causas de los tirones.
 async function calcularPicos(cual) {
   try {
     const j = await (await fetch(`/api/picos/${S.id}/${cual}?v=${Date.now()}`)).json();
@@ -256,7 +229,6 @@ function picosDeLaVista() {
     : (S.picosMaster || S.picosOriginal);
 }
 
-// la gráfica que se ve siempre es la de la versión que está sonando
 function pintarOndaDeLaVersion(progreso) {
   const picos = picosDeLaVista();
   if (picos) dibujarOnda(picos, progreso || 0);
@@ -269,9 +241,6 @@ async function pintarOnda() {
   pintarOndaDeLaVersion(0);
 }
 
-// Onda con caché: la base de barras se dibuja UNA vez en un lienzo aparte y en cada
-// avance solo se repinta la parte ya escuchada. Antes se rehacía entera en cada
-// «timeupdate» (varias veces por segundo) y por eso iba a tirones.
 let baseOnda = null;
 let claveBase = '';
 
@@ -279,7 +248,7 @@ function pintarBarras(ctx, picos, ancho, alto, progreso, color, soloHechas) {
   const paso = ancho / picos.length;
   const grosor = Math.max(1.5, paso * 0.62);
   const medio = alto / 2;
-  const escala = (medio - 6) / 1.25;          // el 1,0 va dibujado por dentro
+  const escala = (medio - 6) / 1.25;          
   const hasta = soloHechas ? Math.floor(picos.length * progreso) : picos.length;
   ctx.fillStyle = color;
   for (let i = 0; i < hasta; i++) {
@@ -336,7 +305,6 @@ function dibujarOnda(picos, progreso) {
   }
 }
 
-// ------------------------------------------------------------------ comparar
 function pintarSonando() {
   if (!S.medidasOriginal) return;
   const linea = S.viendoOriginal
@@ -348,13 +316,6 @@ function pintarSonando() {
 
 const REPRODUCTORES = ['#audioOriginal', '#audioMaster', '#audioMaster2'];
 
-// ------------------------------------------------------------------ sonido
-// El panel no usa los reproductores del navegador cuando el servidor puede sacar
-// sonido: hay UNA tarjeta abierta y UNA posición compartida por todas las versiones,
-// así que cambiar de ajuste es cambiar de dónde se leen las muestras. No hay parón,
-// no hay salto de posición, no suenan dos a la vez y el navegador no puede bloquear
-// el arranque automático (no pasa por él). Si no hay portaudio ni tarjeta, `nativo`
-// se queda en falso y se usan los <audio> de siempre.
 const REPRO = {
   nativo: false, clave: 'original', pos: 0, dur: 0, sonando: false,
   async init() {
@@ -391,14 +352,13 @@ const REPRO = {
     }
   },
   poner(cual, desde) { return REPRO.mando('poner', { cual, desde: desde || 0, sonar: true }); },
-  // sonar sin valor = sigue como estaba (si el usuario había pausado, sigue en pausa)
+  
   cambiar(cual, sonar) { return REPRO.mando('cambiar', { cual, sonar: sonar }); },
   pausa() { return REPRO.mando('pausa'); },
   seguir() { return REPRO.mando('seguir'); },
   ir(t) { return REPRO.mando('ir', { t }); },
 };
 
-// la onda y el botón Escuchar/Parar avanzan con la posición del servidor
 function latirSonido() {
   if (!S.nativo || !S.id) return;
   fetch(`/api/repro/estado?id=${S.id}`).then((r) => r.json()).then((j) => {
@@ -409,14 +369,9 @@ function latirSonido() {
   }).catch(() => {});
 }
 
-// Los navegadores pueden bloquear el sonido automático hasta que el usuario toca
-// algo. Si pasa, se guarda y se reintenta en el primer clic o tecla.
-// Todos los navegadores dejan arrancar en SILENCIO aunque bloqueen el sonido
-// automático; en cuanto arranca se sube el volumen. Así suena solo en cualquier
-// equipo, sin depender de opciones de arranque ni de que el usuario toque nada.
 function arrancar(el) {
   if (!el) return;
-  el.classList.remove('oculto');      // un reproductor con display:none no suena nunca
+  el.classList.remove('oculto');      
   if (!el.paused) {
     el.muted = false;
     S.pendienteSuena = null;
@@ -439,9 +394,6 @@ function arrancar(el) {
   }
 }
 
-// (sin reintento al tocar en cualquier parte: daba arranques raros; solo suena al
-// cargar, al cambiar de versión o al pulsar Escuchar)
-
 function masterEnUso() {
   return S.elMaster || $('#audioMaster');
 }
@@ -450,13 +402,9 @@ function audioActivo() {
   return S.viendoOriginal ? $('#audioOriginal') : masterEnUso();
 }
 
-// Cambia de un reproductor a otro en caliente: el que suena NO se toca hasta que el
-// entrante está de verdad sonando. En ese instante se corrige la deriva (cargar el
-// archivo puede retrasar el arranque unas centésimas) y solo entonces se para el
-// saliente. Ni silencio ni dos versiones a la vez, y el corte cae en la misma posición.
 function relevarEnCaliente(parar, entrante, visible, alinear) {
   const estado = { hecho: false, rescate: null };
-  // rastro corto para poder mirar por qué no ha sonado en un equipo ajeno
+  
   const nota = (txt) => {
     S.depuracion = S.depuracion || [];
     S.depuracion.push(txt + ' ' + Math.round(performance.now()));
@@ -467,7 +415,7 @@ function relevarEnCaliente(parar, entrante, visible, alinear) {
     estado.hecho = true;
     clearTimeout(estado.rescate);
     if (!ok) {
-      // no arrancó: sigue sonando el de antes y este queda apuntado para después
+      
       nota('no arranca ' + entrante.id);
       S.pendienteSuena = entrante;
       if (!visible) entrante.classList.add('oculto');
@@ -481,21 +429,21 @@ function relevarEnCaliente(parar, entrante, visible, alinear) {
           if (Math.abs(deriva) > 0.03) {
             try {
               entrante.currentTime = Math.max(0, entrante.currentTime + deriva);
-            } catch (e) { /* sin datos todavía */ }
+            } catch (e) {  }
           }
         }
         parar.pause();
       }
       parar.classList.add('oculto');
     }
-    // el que suena nunca puede quedarse con `oculto`: es display:none y WebKit lo para
+    
     entrante.classList.remove('oculto');
     pintarSonando();
   };
-  // Los navegadores bloquean el sonido automático hasta que hay un gesto del usuario,
-  // pero SÍ dejan arrancar EN SILENCIO: si el primer intento es rechazado se reintenta
-  // sin volumen y se sube en cuanto suena. Sin esto, al abrir con una canción cargada
-  // o al llegar el primer ajuste no sonaba nada hasta pulsar un botón.
+  
+  
+  
+  
   const intenta = (silencioso) => {
     nota('play ' + entrante.id + (silencioso ? ' (mudo)' : ''));
     entrante.muted = silencioso;
@@ -517,21 +465,20 @@ function relevarEnCaliente(parar, entrante, visible, alinear) {
       intenta(true);
     }
   };
-  // al primer `playing` se sube el volumen (si arrancó en silencio) y se releva el sonido
+  
   entrante.addEventListener('playing', () => { entrante.muted = false; cerrar(true); }, { once: true });
   estado.rescate = setTimeout(() => { if (entrante.paused) cerrar(false); }, 1500);
   intenta(false);
   return estado;
 }
 
-// Coloca `entrante` en la posición pedida (o la de `parar`) y lo arranca con relevo.
 function arrancarEnPosicion(entrante, parar, visible, posicion, alinear) {
   const arranca = () => {
     const donde = (posicion === undefined || posicion === null)
       ? (parar ? (parar.currentTime || 0) : 0) : posicion;
     try {
       entrante.currentTime = Math.min(donde, entrante.duration || donde);
-    } catch (e) { /* sin datos todavía */ }
+    } catch (e) {  }
     relevarEnCaliente(parar, entrante, visible, alinear);
   };
   if (entrante.readyState >= 3) arranca();
@@ -545,8 +492,8 @@ function cambiarAudio(cual, conservar) {
     b.classList.toggle('activa', b.dataset.cual === (S.viendoOriginal ? 'original' : 'master'));
   });
   if (S.nativo) {
-    // la posición la lleva el servidor: al cambiar de versión sigue por donde iba,
-    // sin parón y sin volver al principio (es lo que permite comparar A/B)
+    
+    
     if (conservar) REPRO.cambiar(cual); else REPRO.poner(cual, 0);
     pintarSonando();
     return;
@@ -569,7 +516,6 @@ function cambiarAudio(cual, conservar) {
   pintarOndaDeLaVersion(entrante.duration ? entrante.currentTime / entrante.duration : 0);
 }
 
-// Como en la app: «Masterizado» no se puede pulsar hasta que su versión está lista
 function marcarMasterListo(listo) {
   const boton = document.querySelector('#conmutador .opcion[data-cual="master"]');
   if (!boton) return;
@@ -577,11 +523,6 @@ function marcarMasterListo(listo) {
   boton.classList.toggle('esperando', !listo);
 }
 
-// Cambia la versión masterizada sin cortar lo que está sonando: el archivo nuevo
-// se carga en el reproductor que NO suena y solo se cambia cuando ya puede
-// reproducirse, en la misma posición. Si sonaba el original, se pasa al master.
-// Si el relevo no llegó a arrancar (política del navegador o carga lenta), se
-// reintenta una vez sobre el reproductor que debe estar sonando.
 function asegurarSonando(espera) {
   setTimeout(() => {
     const el = masterEnUso();
@@ -597,14 +538,14 @@ function refrescarMaster(forzar) {
   const sonando = forzar || sonandoOriginal || (!S.viendoOriginal && !viejo.paused);
   nuevo.src = `/api/audio/${S.id}/master?v=${Date.now()}`;
   const arranca = () => {
-    // la posición se toma AHORA, no cuando se pidió el cambio: cargar el archivo puede
-    // tardar y con la de antes se repetiría el trozo ya escuchado
+    
+    
     const fuente = (sonandoOriginal && !original.paused) ? original : viejo;
     const donde = fuente ? (fuente.currentTime || 0) : 0;
     try {
       nuevo.currentTime = Math.min(donde, nuevo.duration || donde);
-    } catch (e) { /* sin datos todavía */ }
-    S.elMaster = nuevo;                     // desde aquí manda el reproductor nuevo
+    } catch (e) {  }
+    S.elMaster = nuevo;                     
     if (!sonando) {
       viejo.pause();
       viejo.classList.add('oculto');
@@ -618,7 +559,6 @@ function refrescarMaster(forzar) {
   else nuevo.addEventListener('canplay', arranca, { once: true });
 }
 
-//  ------------------------------------------------------------------ ajustes
 function botonDe(o) {
   const b = document.createElement('button');
   b.className = 'boton-opcion tarjeta-opcion';
@@ -641,7 +581,7 @@ function pintarOpciones() {
     const o = porClave[clave];
     if (o) destacados.appendChild(botonDe(o));
   });
-  // NORMA: en «Recomendadas por tipo de audio» nunca salen los fijos (Claro y Retro)
+  
   const candidatas = S.presets.filter((o) => !DESTACADOS.includes(o.clave));
   candidatas.slice(0, 2).forEach((o) => recom.appendChild(botonDe(o)));
   $('#cajaRecomendada').classList.remove('oculto');
@@ -659,7 +599,6 @@ function pintarOpciones() {
   pintarIconos();
 }
 
-// giro mientras calcula y visto verde cuando ya está hecho (igual que la app)
 function pintarIconos() {
   document.querySelectorAll('.tarjeta-opcion').forEach((b) => {
     const clave = b.dataset.clave;
@@ -673,7 +612,7 @@ function pintarIconos() {
       icono = document.createElement('span');
       b.appendChild(icono);
     }
-    // solo se toca si cambia: reasignar la clase reinicia la animación en WebKit
+    
     const clase = 'icono-preset ' + quiere;
     if (icono.className !== clase) icono.className = clase;
   });
@@ -689,7 +628,7 @@ async function masterizar(preset) {
   S.presetNombre = nombre;
   if (S.autoActivo) aplicarAuto(preset);
   S.pidiendo = true;
-  if (!S.hechos.has(preset)) S.calculando.add(preset);   // ya calculado: sin giro
+  if (!S.hechos.has(preset)) S.calculando.add(preset);   
   pintarIconos();
   marcarMasterListo(false);
   $('#estadoTrabajo').textContent = `${T('Aplicando ')}${T(nombre)}…`;
@@ -710,21 +649,20 @@ async function masterizar(preset) {
   let cacheado = false;
   try {
     cacheado = (await respuesta.json()).cache === true;
-  } catch (e) { /* sin respuesta clara: se espera al sondeo */ }
+  } catch (e) {  }
   if (cacheado) {
     S.calculando.delete(preset);
-    S.hechos.add(preset);     // ya estaba calculado: el visto sale al momento
+    S.hechos.add(preset);     
     pintarIconos();
     await consultar();
   }
 }
 
-// sondear el estado siempre: así los vistos van apareciendo según se calculan
 async function consultar() {
   if (!S.id) return;
   const r = await fetch(`/api/estado/${S.id}`);
   if (!r.ok) {
-    // el servicio se reinició y el trabajo ya no existe: se para, no se relanza solo
+    
     S.id = null;
     S.pidiendo = false;
     S.calculando = new Set();
@@ -734,18 +672,18 @@ async function consultar() {
   }
   const j = await r.json();
   S.calculando = new Set(j.calculando || []);
-  // el ajuste que acaba de pulsar el usuario no se cae del giro en la primera vuelta
-  // (el servidor tarda unos milisegundos en marcarlo): si no, el icono parpadea
+  
+  
   if (S.pidiendo && S.preset && !S.hechos.has(S.preset)) S.calculando.add(S.preset);
   S.pendientes = j.pendientes || 0;
-  // se SUMAN los hechos: lo ya calculado conserva su visto aunque el servidor
-  // empiece otra tanda (antes se reemplazaba y los vistos desaparecían)
+  
+  
   (j.hechos || []).forEach((clave) => S.hechos.add(clave));
   pintarIconos();
   if (j.estado === 'listo') {
     marcarMasterListo(true);
-    // solo se aplica si el ajuste terminado es el que se ha pedido: si no, una
-    // respuesta vieja ('listo' del ajuste anterior) se comía el primer toque
+    
+    
     if (S.pidiendo && j.preset === S.preset) {
       const nombre = (S.presets.find((o) => o.clave === j.preset) || {}).nombre || j.preset;
       S.presetNombre = nombre;
@@ -754,7 +692,7 @@ async function consultar() {
       $('#estadoTrabajo').textContent = '';
       $('#btnDescargar').href = `/api/descargar/${S.id}`;
       S.presetSonando = nombre;
-      // como la app: al estar lista la versión se pasa sola a «Masterizado» y suena
+      
       S.viendoOriginal = false;
       marcarMasterListo(true);
       document.querySelectorAll('#conmutador .opcion').forEach((b) => {
@@ -762,13 +700,13 @@ async function consultar() {
       });
       pintarSonando();
       if (S.nativo) {
-        // entra en la posición exacta en la que va el original, sin cortar el sonido
+        
         REPRO.cambiar('master');
       } else {
-        refrescarMaster(true);        // suena el ajuste en cuanto está listo
+        refrescarMaster(true);        
         asegurarSonando();
       }
-      // la onda del ajuste nuevo se calcula aparte: la original y cada versión se ven distintas
+      
       calcularPicos('master').then((picos) => {
         if (!picos) return;
         S.picosMaster = picos;
@@ -785,16 +723,15 @@ async function consultar() {
   }
 }
 
-// ------------------------------------------------------------------ finos
 function ponerLufs(valor, manual) {
   const numero = Number(valor);
   if (!isFinite(numero)) return;
   const v = Math.max(-24, Math.min(-6, Number(numero.toFixed(1))));
-  // Con Auto cada ajuste se calcula con SU sonoridad, así que cambiar de ajuste no
-  // invalida los vistos de los demás: solo se limpian si el usuario mueve la barra
-  // a mano. Limpiarlos al cambiar de ajuste hacía parpadear todos los iconos.
+  
+  
+  
   if (v !== S.lufs && (manual || !S.autoActivo)) {
-    S.hechos = new Set();      // otra sonoridad, otra tanda: los vistos ya no valen
+    S.hechos = new Set();      
     S.calculando = new Set();
     pintarIconos();
   }
@@ -806,7 +743,7 @@ function ponerLufs(valor, manual) {
 function ponerIntensidad(valor) {
   const v = Math.max(0, Math.min(120, Math.round(Number(valor) || 0)));
   if (v !== S.intensidad) {
-    S.hechos = new Set();      // otra intensidad, otra tanda: los vistos ya no valen
+    S.hechos = new Set();      
     S.calculando = new Set();
     pintarIconos();
   }
@@ -821,7 +758,6 @@ function bloquear(sel, activo) {
   if (el) el.classList.toggle('bloqueado', !!activo);
 }
 
-// Auto: la sonoridad de cada ajuste la pone el análisis, no el usuario
 function aplicarAuto(clave) {
   if (!S.autoActivo) return;
   const c = clave || S.preset || (S.presets[0] || {}).clave;
@@ -836,14 +772,13 @@ function pedirOtro() {
   esperaCambio = setTimeout(() => { if (S.preset) masterizar(S.preset); }, 700);
 }
 
-// Al abrir o recargar la página se recupera la última canción, como hace la app
 async function iniciar() {
-  // ¿puede el servidor sacar sonido por su cuenta? Es el camino bueno: sin parones
-  // al cambiar de ajuste y sin que el navegador bloquee el arranque automático.
+  
+  
   S.nativo = await REPRO.init();
   AVISAR({ tipo: 'arranque', version: '1.0', tieneSesion: !!S.id, sonidoPropio: S.nativo,
            idioma: IDIOMA.valor, navegador: navigator.language });
-  // banderas del idioma: cambian los textos sin tocar el sonido
+  
   ['#btnIdiomaEs', '#btnIdiomaEn'].forEach((sel) => {
     const b = $(sel);
     if (b) b.addEventListener('click', () => {
@@ -861,8 +796,8 @@ async function iniciar() {
   });
   input.addEventListener('change', () => { if (input.files[0]) subir(input.files[0]); });
 
-  // Arrastrar y soltar en toda la ventana: al soltar un archivo se carga, esté donde
-  // esté el puntero. Así funciona igual en Chrome/Edge (Windows) y en WebKit (Linux).
+  
+  
   document.addEventListener('dragenter', (ev) => {
     ev.preventDefault();
     if (zona) zona.classList.add('encima');
@@ -882,7 +817,7 @@ async function iniciar() {
     const lista = ev.dataTransfer && ev.dataTransfer.files;
     if (!lista || !lista.length) return;
     const archivo = lista[0];
-    if (archivo.size === 0) return;          // carpetas y accesos sin contenido
+    if (archivo.size === 0) return;          
     subir(archivo);
   });
 
@@ -890,7 +825,7 @@ async function iniciar() {
     b.addEventListener('click', () => { if (S.id) cambiarAudio(b.dataset.cual, true); });
   });
 
-  // la onda se puede tocar para saltar, igual que en la app
+  
   $('#onda').addEventListener('click', (ev) => {
     const caja = ev.currentTarget.getBoundingClientRect();
     const f = Math.max(0, Math.min(1, (ev.clientX - caja.left) / caja.width));
@@ -921,7 +856,7 @@ async function iniciar() {
     const texto = T(suena ? '■ Parar' : '▶ Escuchar');
     if (boton.textContent !== texto) boton.textContent = texto;
   }, 400);
-  // la posición la manda el servidor cuando el sonido es suyo
+  
   setInterval(latirSonido, 250);
 
   $('#btnDescargar').addEventListener('click', (ev) => {
@@ -932,7 +867,7 @@ async function iniciar() {
 
   REPRODUCTORES.forEach((sel) => {
     const el = $(sel);
-    // el audio va en bucle: al llegar al final vuelve a empezar
+    
     el.addEventListener('ended', () => {
       el.currentTime = 0;
       arrancar(el);
@@ -940,7 +875,7 @@ async function iniciar() {
     el.addEventListener('timeupdate', () => {
       if (el !== audioActivo() || !picosDeLaVista()) return;
       const ahora = performance.now();
-      if (ahora - (S.ultimaOnda || 0) < 120) return;   // 8 repintados por segundo bastan
+      if (ahora - (S.ultimaOnda || 0) < 120) return;   
       S.ultimaOnda = ahora;
       pintarOndaDeLaVersion(el.currentTime / (el.duration || 1));
     });
@@ -952,7 +887,7 @@ async function iniciar() {
     });
   });
 
-  // Auto arranca activado y bloquea sonoridad (como la app)
+  
   $('#btnAuto').addEventListener('click', () => {
     S.autoActivo = !S.autoActivo;
     $('#btnAuto').textContent = T(S.autoActivo ? 'Auto ✓' : 'Auto');
@@ -965,7 +900,7 @@ async function iniciar() {
     }
   });
 
-  // Fijo arranca activado y bloquea la intensidad (como la app)
+  
   $('#btnFijo').addEventListener('click', () => {
     S.fijoActivo = !S.fijoActivo;
     $('#btnFijo').textContent = T(S.fijoActivo ? 'Fijo ✓' : 'Fijo');
@@ -1001,7 +936,7 @@ async function iniciar() {
     resumen.textContent = T(finos.open ? 'Ajustes finos ▾' : 'Ajustes finos ▸');
   });
 
-  // estado inicial igual que la app
+  
   S.elMaster = $('#audioMaster');
   marcarMasterListo(false);
   ponerLufs(-10);
@@ -1014,15 +949,15 @@ async function iniciar() {
   bloquear('#campoIntensidad', true);
   dibujarOnda(new Array(220).fill(0.06), 0);
   mirarMotores();
-  aplicarIdioma();          // la primera vez, el idioma detectado del sistema
-  arrancarEnLimpio();       // al abrir NO se retoma la última canción
-  // el estado se mira cada 1,2 s, pero mientras hay ajustes en marcha cada 400 ms:
-// así el giro se convierte en visto en cuanto termina, sin retraso apreciable
+  aplicarIdioma();          
+  arrancarEnLimpio();       
+  
+
 let relojEstado = 0;
 function latirEstado() {
   const trabajando = S.pidiendo || (S.calculando && S.calculando.size > 0) || (S.pendientes || 0) > 0;
   if (trabajando) S.ultimoTrabajo = Date.now();
-  // rápido mientras haya cola detrás y 1,5 s más después: el último visto entra sin espera
+  
   const prisa = trabajando || (Date.now() - (S.ultimoTrabajo || 0) < 1500);
   const espera = prisa ? 250 : 1200;
   clearTimeout(relojEstado);
@@ -1037,9 +972,6 @@ function latirEstado() {
 latirEstado();
 }
 
-/* Los enlaces que salen del panel (Donar, iaradio.es…) los abre el servidor en el
-   navegador del sistema. Dentro de la ventana GTK+WebKit y de WebView2 se perdían:
-   no hay pestañas y las ventanas nuevas se descartan. */
 document.addEventListener('click', (ev) => {
   const enlace = ev.target.closest && ev.target.closest('a[data-fuera], a[href^="http"]');
   if (!enlace) return;

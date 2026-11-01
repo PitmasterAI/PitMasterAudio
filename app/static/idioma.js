@@ -1,16 +1,7 @@
 'use strict';
 
-// ---------------------------------------------------------------------------
-// Idioma del panel (español / inglés), igual que en la app.
-// La clave de cada traducción es EXACTAMENTE el texto español que hay en el
-// HTML o que se escribe desde app.js, así traducir es solo envolverlo con T().
-// Al instalar (primer arranque) se mira el idioma del navegador: si empieza por
-// «es» va en español y, si no, en inglés. La elección de las banderas manda y
-// se guarda; cambiar de idioma solo repinta textos: el audio no se toca.
-// ---------------------------------------------------------------------------
-
 const TRAD = {
-  // cabecera y tarjetas
+  
   'Remasterizado de Audio por Ecualización': 'Audio Remastering by Equalization',
   'Elegir audio': 'Choose audio',
   '***No se recomienda subir audio ya remasterizado***':
@@ -38,7 +29,7 @@ const TRAD = {
   'Fijo': 'Fixed',
   'Optimizando Rendimiento': 'Optimizing performance',
 
-  // textos que escribe el JS
+  
   'Analizando…': 'Analyzing…',
   'Trabajando…': 'Working…',
   'Aplicando ': 'Applying ',
@@ -69,7 +60,7 @@ const TRAD = {
   'sin sonido propio': 'no built-in sound',
   'sonido propio': 'built-in sound',
 
-  // los 25 ajustes (los nombres llegan del servidor en español)
+  
   'Amplificador': 'Amplifier',
   'Caliente': 'Hot',
   'Claro': 'Clear',
@@ -104,12 +95,12 @@ const IDIOMA = {
   clave: 'pitmasteraudio.idioma',
   valor: 'es',
 
-  /** Idioma de arranque: lo elegido a mano o, la primera vez, el del navegador. */
+  
   inicio() {
     let guardado = null;
     try {
       guardado = localStorage.getItem(this.clave);
-    } catch (e) { /* sin almacenamiento */ }
+    } catch (e) {  }
     if (guardado === 'es' || guardado === 'en') {
       this.valor = guardado;
       return this.valor;
@@ -123,7 +114,7 @@ const IDIOMA = {
   guardar() {
     try {
       localStorage.setItem(this.clave, this.valor);
-    } catch (e) { /* sin almacenamiento */ }
+    } catch (e) {  }
   },
 
   poner(cual) {
@@ -131,7 +122,7 @@ const IDIOMA = {
     this.guardar();
   },
 
-  /** Traduce un texto (o lo deja igual si no está en el mapa). */
+  
   t(texto) {
     if (texto === null || texto === undefined) return texto;
     if (this.valor === 'en') {

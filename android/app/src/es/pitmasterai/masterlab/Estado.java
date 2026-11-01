@@ -6,7 +6,6 @@ import es.pitmasterai.masterlab.motor.Wav;
 import java.io.File;
 import java.util.Set;
 
-/* loaded from: classes.dex */
 public final class Estado {
     static Estado ultima;
     Wav.Datos datos;

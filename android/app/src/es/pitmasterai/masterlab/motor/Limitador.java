@@ -2,7 +2,6 @@ package es.pitmasterai.masterlab.motor;
 
 import java.util.ArrayDeque;
 
-/* loaded from: classes.dex */
 public final class Limitador {
     private static final int BLOQUE = 8192;
     private static final double[] H = filtroInterpolador();
@@ -42,7 +41,7 @@ public final class Limitador {
         return dArr;
     }
 
-    /* JADX INFO: Access modifiers changed from: package-private */
+    
     public static double picoRealEn(float[] fArr, int i) {
         int length = fArr.length;
         double abs = Math.abs(fArr[i]);

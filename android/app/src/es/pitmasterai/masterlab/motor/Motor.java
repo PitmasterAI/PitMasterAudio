@@ -2,7 +2,6 @@ package es.pitmasterai.masterlab.motor;
 
 import es.pitmasterai.masterlab.motor.Compresor;
 
-/* loaded from: classes.dex */
 public final class Motor {
     static Biquad[] compensar(double[] dArr, double[] dArr2, double d, double d2, int i) {
         int length = dArr.length;

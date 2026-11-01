@@ -2,7 +2,6 @@ package es.pitmasterai.masterlab.motor;
 
 import es.pitmasterai.masterlab.motor.Compresor;
 
-/* loaded from: classes.dex */
 public final class Presets {
     public static final String[] CLAVES = {"alt_high_bright", "alt_high_brighter", "alt_high_neutral", "alt_high_warm", "alt_high_warmer", "alt_low_bright", "alt_low_brighter", "alt_low_neutral", "alt_low_warm", "alt_low_warmer", "alt_medium_bright", "alt_medium_brighter", "alt_medium_neutral", "alt_medium_warm", "alt_medium_warmer", "base_amplia", "base_caliente", "base_claro", "base_equilibrado", "base_film", "base_neutra", "base_potente", "base_retro", "voz_clara", "podcast"};
     public static final String[] NOMBRES = {"Radiante", "Deslumbrante", "Firme", "Densa", "Oscura", "Luminosa", "Aire", "Sencilla", "Suave", "Terciopelo", "Viva", "Chispa", "Habitual", "Calida", "Sedosa", "Amplia", "Caliente", "Claro", "Amplificador", "Film", "Neutra", "Potente", "Retro", "Audiolibro", "Podcast"};
@@ -10,15 +9,15 @@ public final class Presets {
 
     public static Preset crear(int i) {
         switch (i) {
-            case Trabajo.INTERACTIVO /* 0 */:
+            case Trabajo.INTERACTIVO :
                 return alt_high_bright();
             case 1:
                 return alt_high_brighter();
             case 2:
                 return alt_high_neutral();
-            case Biquad.PASO_ALTO /* 3 */:
+            case Biquad.PASO_ALTO :
                 return alt_high_warm();
-            case Biquad.PASO_BAJO /* 4 */:
+            case Biquad.PASO_BAJO :
                 return alt_high_warmer();
             case 5:
                 return alt_low_bright();

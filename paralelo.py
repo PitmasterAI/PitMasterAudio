@@ -1,17 +1,3 @@
-"""Cuántas instancias de cada motor lleva el equipo: regla fija, igual que la APK.
-
-Regla:
-  · Un solo trabajador de CPU.
-  · Un solo trabajador de GPU si el aparato tiene tarjeta; ninguno si no la tiene.
-  · Es la misma que la app de Android: un motor principal y otro secundario, y nada más.
-
-No hay banco de pruebas: con una instancia por motor no hay nada que calibrar.
-
-El resultado se guarda en ~/.masterlab_paralelo.json para poder consultarlo.
-
-Uso:
-  python3 paralelo.py            muestra la configuración del equipo
-"""
 import json
 import os
 import subprocess
@@ -21,13 +7,10 @@ import time
 AQUI = os.path.dirname(os.path.abspath(__file__))
 FICHERO = os.path.join(os.path.expanduser('~'), '.masterlab_paralelo.json')
 
-CPU = 1        # un trabajador de CPU
-GPU = 1        # un trabajador de GPU (si hay tarjeta)
+CPU = 1
+GPU = 1
 
-
-# ------------------------------------------------------------------ detectar
 def memoria_libre_gb():
-    """RAM disponible ahora mismo (GB)."""
     try:
         with open('/proc/meminfo', encoding='utf-8') as f:
             for linea in f:
@@ -40,13 +23,7 @@ def memoria_libre_gb():
     except (ValueError, OSError, AttributeError):
         return 1.0
 
-
 def gpu():
-    """(clase, nombre): 'dedicada', 'integrada' o None si no hay tarjeta.
-
-    Mira el mismo motor que usa el masterizado (Vulkan o CUDA): así un equipo con
-    tarjeta tiene siempre su trabajador de GPU, sea cual sea el sistema.
-    """
     sys.path.insert(0, AQUI)
     try:
         import gpuops
@@ -62,20 +39,9 @@ def gpu():
         return 'dedicada', nombre
     return 'integrada', nombre
 
-
 _USO_CACHE = {'cuando': 0.0, 'valor': (None, False)}
 
-
 def uso_gpu():
-    """(uso en %, otros programas usando la tarjeta). Solo se puede mirar con NVIDIA.
-
-    Si el equipo está generando vídeo o entrenando con la tarjeta a tope, nuestros
-    cálculos se quedan esperando en la cola de la GPU mientras la CPU está vacía.
-
-    El resultado se guarda unos segundos: lanzar `nvidia-smi` en cada ajuste cuesta
-    entre medio segundo y dos segundos (dos veces por petición del usuario: uso y
-    procesos), y eso se notaba como un retraso al pulsar cada ajuste.
-    """
     now = time.time()
     if now - _USO_CACHE['cuando'] < 10.0:
         return _USO_CACHE['valor']
@@ -105,18 +71,13 @@ def uso_gpu():
     _USO_CACHE.update({'cuando': now, 'valor': (pct, otros)})
     return pct, otros
 
-
 def gpu_ocupada(umbral=50):
-    """True si otro programa está usando la tarjeta de verdad (no solo reservando memoria)."""
     pct, otros = uso_gpu()
     if pct is None:
         return False
     return pct >= umbral
 
-
-# ------------------------------------------------------------------ guardar
 def en_vivo():
-    """La configuración de este equipo, mirando la tarjeta que hay ahora mismo."""
     clase, nombre = gpu()
     pct, otros = uso_gpu()
     return {
@@ -131,7 +92,6 @@ def en_vivo():
         'fecha': time.strftime('%Y-%m-%d %H:%M'),
     }
 
-
 def guardar(cfg):
     try:
         with open(FICHERO, 'w', encoding='utf-8') as f:
@@ -139,20 +99,16 @@ def guardar(cfg):
     except OSError:
         pass
 
-
 def config(recalcular=False):
-    """Configuración del equipo (se recalcula y se guarda; `recalcular` se acepta por compatibilidad)."""
     cfg = en_vivo()
     guardar(cfg)
     return cfg
-
 
 def describe(cfg):
     gpu_txt = ('sin GPU' if not cfg['gpu']
                else '%s %s' % (cfg['gpu_clase'], cfg['gpu_nombre']))
     return ('instancias CPU %d · GPU %d (%s)'
             % (cfg['cpu'], cfg['gpu'], gpu_txt))
-
 
 if __name__ == '__main__':
     print(describe(config()))

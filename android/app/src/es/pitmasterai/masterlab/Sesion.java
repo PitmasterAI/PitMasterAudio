@@ -7,7 +7,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import org.json.JSONObject;
 
-/* loaded from: classes.dex */
 public final class Sesion {
     public final int indice;
     public final float intensidad;

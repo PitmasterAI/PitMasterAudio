@@ -3,7 +3,6 @@ package es.pitmasterai.masterlab.motor;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-/* loaded from: classes.dex */
 public final class Sonoridad {
     private static Biquad[] filtrosK(double d) {
         double tan = Math.tan(5284.078578647628d / d);

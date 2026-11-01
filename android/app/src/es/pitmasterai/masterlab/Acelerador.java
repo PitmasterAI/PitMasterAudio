@@ -6,7 +6,6 @@ import android.provider.Settings;
 import es.pitmasterai.masterlab.motor.Gpu;
 import es.pitmasterai.masterlab.motor.VulkanNativo;
 
-/* loaded from: classes.dex */
 public final class Acelerador {
     public static final String CLAVE_FORZAR = "masterlab_forzar_gpu";
     public static final String CPU = "CPU";

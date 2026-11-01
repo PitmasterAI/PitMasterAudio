@@ -15,10 +15,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 
-/** Lee el audio elegido: WAV directo o cualquier formato que decodifique Android (MP3, M4A, FLAC, OGG). */
 public final class LectorAudio {
 
-    /** Datos del archivo sin decodificarlo entero. */
+    
     public static final class Info {
         public final int frecuencia;
         public final int canales;
@@ -34,7 +33,7 @@ public final class LectorAudio {
     private LectorAudio() {
     }
 
-    /** Frecuencia, canales y duración: para decidir si hace falta decodificar todo. */
+    
     public static Info info(Context ctx, Uri uri) throws Exception {
         MediaExtractor extractor = new MediaExtractor();
         try {
@@ -64,10 +63,8 @@ public final class LectorAudio {
         return null;
     }
 
-    /**
-     * Decodifica solo el tramo pedido (en segundos). La memoria depende del tramo,
-     * no de la duración del archivo: sirve para audiolibros y podcasts largos.
-     */
+    
+
     public static Wav.Datos leerTramo(Context ctx, Uri uri, double desdeSeg, double hastaSeg)
             throws Exception {
         MediaExtractor extractor = new MediaExtractor();
@@ -164,7 +161,7 @@ public final class LectorAudio {
         }
     }
 
-    /** Lee el archivo entero (WAV directo o decodificado a WAV temporal). */
+    
     public static Wav.Datos leer(Context ctx, Uri uri) throws Exception {
         File temporal = File.createTempFile("masterlab_entrada", ".wav", ctx.getCacheDir());
         try {

@@ -1,6 +1,5 @@
 package es.pitmasterai.masterlab.motor;
 
-/* loaded from: classes.dex */
 public final class Trabajo {
     public static final int INTERACTIVO = 0;
     private static final ThreadLocal<Integer> MODO = new ThreadLocal<>();
@@ -55,7 +54,7 @@ public final class Trabajo {
         }
     }
 
-    /* loaded from: classes.dex */
+    
     public static class Cancelado extends RuntimeException {
         public Cancelado() {
             super("masterizado sustituido");

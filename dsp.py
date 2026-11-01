@@ -1,19 +1,10 @@
-"""
-Motor DSP para replicar la masterización de Referencia en local.
-Todo numpy/scipy: EQ biquad (RBJ), compresor multibanda, saturador,
-ensanchador M/S, reverb, limitador con lookahead y normalización LUFS.
-"""
 import ctypes
 import os
 
 import numpy as np
 
-# Núcleos en C (kernel.so / kernel.dll): la envolvente de pico real y los barridos
-# de ganancia son 20-40 veces más rápidos que en numpy. Si no está, todo sigue
-# funcionando con numpy.
 _KERNEL = None
 _KERNEL_PROBADO = False
-
 
 def _kernel():
     global _KERNEL, _KERNEL_PROBADO
@@ -42,24 +33,21 @@ def _kernel():
     _KERNEL = None
     return None
 
-
 try:
     import aceleracion
-except Exception:                     # si no está el módulo, todo en CPU
+except Exception:
     aceleracion = None
 
 try:
     import gpuops
-except Exception:                     # sin capa de GPU: se sigue en numpy
+except Exception:
     gpuops = None
 
-
 def _motor_gpu():
-    """True si hay alguna GPU utilizable: Vulkan primero, torch/CUDA después."""
     try:
         if gpuops is not None:
             if gpuops.modo_hilo() == 'CPU':
-                return False          # este hilo va en CPU a propósito
+                return False
             if gpuops.listo():
                 return True
     except Exception:
@@ -70,8 +58,6 @@ def _motor_gpu():
         return False
 from scipy import signal
 
-
-# ---------------------------------------------------------------- EQ (RBJ) ---
 def _rbj(btype, sr, f0, gain_db=0.0, q=0.707):
     A = 10 ** (gain_db / 40.0)
     w0 = 2 * np.pi * f0 / sr
@@ -107,13 +93,7 @@ def _rbj(btype, sr, f0, gain_db=0.0, q=0.707):
     b = np.array(b, dtype=np.float64); a = np.array(a, dtype=np.float64)
     return b / a[0], a / a[0]
 
-
 def eq_apply(x, sr, bands):
-    """bands: lista de dicts {type,f,gain,q}. Aplica en cascada (filtro IIR).
-
-    La cascada entera va en una sola pasada (`sosfilt`) en vez de un `lfilter` por
-    banda: mismo resultado, un solo recorrido de la señal en vez de N.
-    """
     y = x.astype(np.float64, copy=False)
     if not bands:
         return y
@@ -127,12 +107,10 @@ def eq_apply(x, sr, bands):
             b = b / a[0]
             a = a / a[0]
         sos.append(np.concatenate([b, a]))
-    # scipy va igual de rápido que la versión en C y es la referencia: se queda
+
     return signal.sosfilt(np.asarray(sos, dtype=np.float64), y, axis=0)
 
-
 def eq_response(sr, bands, freqs=None):
-    """Respuesta en dB de la cascada EQ (para verificacion)."""
     if freqs is None:
         freqs = np.logspace(np.log10(20), np.log10(min(20000, sr / 2 - 100)), 200)
     h = np.ones(len(freqs), dtype=np.complex128)
@@ -143,14 +121,10 @@ def eq_response(sr, bands, freqs=None):
         h *= hh
     return freqs, 20 * np.log10(np.abs(h) + 1e-12)
 
-
-# -------------------------------------------------------------- compresor ---
 def _db(x):
     return 20 * np.log10(np.maximum(np.abs(x), 1e-9))
 
-
 def _slope_gain_db(level_db, threshold, ratio, knee):
-    """Ganancia de reduccion (dB, <=0) con rodilla suave."""
     over = level_db - threshold
     if knee <= 0:
         return np.minimum(0.0, over * (1.0 / ratio - 1.0))
@@ -164,14 +138,8 @@ def _slope_gain_db(level_db, threshold, ratio, knee):
     g[m3] = ((1.0 / ratio - 1.0) * (level_db[m3] - lo) ** 2) / (2 * knee)
     return g
 
-
 def _compress_gpu(x, sr, threshold, ratio, attack_ms, release_ms, knee_db,
                   makeup_db, rms_win_ms, link):
-    """Igual que compress() pero aplica la ganancia en la GPU (torch).
-
-    La envolvente se calcula en CPU (los filtros de una muestra son más rápidos
-    ahí) y el producto de toda la señal se hace en la tarjeta.
-    """
     import torch
     from scipy.ndimage import uniform_filter1d
     from scipy.signal import lfilter as _lf
@@ -198,17 +166,15 @@ def _compress_gpu(x, sr, threshold, ratio, attack_ms, release_ms, knee_db,
     salida = t * g[:, None] if t.dim() > 1 else t * g
     return salida.cpu().numpy()
 
-
 def compress(x, sr, threshold=-20.0, ratio=2.0, attack_ms=20.0,
              release_ms=200.0, knee_db=6.0, makeup_db=0.0,
              rms_win_ms=10.0, link=True):
-    """Compresor con detector RMS + envolvente attack/release (vectorizado)."""
     if _motor_gpu():
         try:
             return _compress_gpu(x, sr, threshold, ratio, attack_ms, release_ms,
                                  knee_db, makeup_db, rms_win_ms, link)
         except Exception:
-            pass                                  # si falla, se sigue en CPU
+            pass
     from scipy.ndimage import uniform_filter1d
     mono = np.max(np.abs(x), axis=1) if (link and x.ndim > 1) else np.abs(x if x.ndim == 1 else x.mean(axis=1))
     w = max(1, int(sr * rms_win_ms / 1000))
@@ -216,26 +182,20 @@ def compress(x, sr, threshold=-20.0, ratio=2.0, attack_ms=20.0,
         mono = np.sqrt(np.maximum(uniform_filter1d(mono ** 2, w, mode='nearest'), 1e-20))
     lvl = _db(mono)
 
-    # suavizado attack/release asimetrico mediante dos one-pole filtradas
     a_at = np.exp(-1.0 / (max(attack_ms, 0.1) * 1e-3 * sr))
     a_rl = np.exp(-1.0 / (max(release_ms, 0.1) * 1e-3 * sr))
     lvl_s = signal.lfilter([1 - a_at], [1, -a_at], lvl)
     lvl_s = np.maximum(lvl_s, signal.lfilter([1 - a_rl], [1, -a_rl], lvl_s))
 
-    red = _slope_gain_db(lvl_s, threshold, ratio, knee_db)          # dB <= 0
+    red = _slope_gain_db(lvl_s, threshold, ratio, knee_db)
     gain = 10 ** ((red + makeup_db) / 20.0)
     return x * gain[:, None] if x.ndim > 1 else x * gain
 
-
-# --------------------------------------------------------- multibanda ------
 def _crossover(x, sr, f, kind='low'):
-    """Linkwitz-Riley 4 (butter 2 doble), fase cero con filtfilt."""
     sos = signal.butter(2, f / (sr / 2), kind, output='sos')
     return signal.sosfiltfilt(sos, x, axis=0)
 
-
 def compress_multiband(x, sr, cross=250.0, settings=None):
-    """2 bandas: <cross y >cross, cada una con sus ajustes."""
     settings = settings or {}
     lof = settings.get('low', {}); hif = settings.get('high', {})
     lo = _crossover(x, sr, cross, 'low')
@@ -246,28 +206,18 @@ def compress_multiband(x, sr, cross=250.0, settings=None):
         hi = compress(hi, sr, **hif)
     return lo + hi
 
-
-# ---------------------------------------------------------- saturacion -----
 def _a_torch(x):
     import torch
     return torch.from_numpy(np.ascontiguousarray(x, dtype=np.float32)).cuda()
 
-
 def _a_numpy(t):
     return t.detach().cpu().numpy()
 
-
 def picos_saturacion(x, drive_db=0.0, even=0.0):
-    """Los tres números que la saturación necesita de TODA la señal.
-
-    Si se calculan por trozos (para repartir el trabajo en varios hilos) cada trozo
-    normaliza a su propio pico y el resultado cambia; se calculan una vez y se pasan.
-    """
     k = float(10 ** (drive_db / 20.0))
     pico_seco = float(np.max(np.abs(x))) if x.size else 0.0
     if not even:
-        # tanh es monótona: el pico de tanh(k*x) es tanh(k*pico), sin recorrer la
-        # señal entera. (Antes se hacía una pasada completa con tanh por ajuste.)
+
         return (float(np.tanh(k * pico_seco)), pico_seco, 0.0)
     wet = gpuops.saturar(x, k) if gpuops is not None else None
     if wet is None:
@@ -276,9 +226,7 @@ def picos_saturacion(x, drive_db=0.0, even=0.0):
     wet = wet + float(even) * (wet ** 2 - media)
     return (float(np.max(np.abs(wet))), pico_seco, media)
 
-
 def _saturate_gpu(x, sr, drive_db, mix, even, tone_hz, picos=None):
-    """Saturacion con la tangente hiperbolica en la GPU (Vulkan o CUDA)."""
     k = float(10 ** (drive_db / 20.0))
     wet = gpuops.saturar(x, k) if gpuops is not None else None
     if wet is None:
@@ -289,23 +237,17 @@ def _saturate_gpu(x, sr, drive_db, mix, even, tone_hz, picos=None):
     if even:
         wet = wet + float(even) * (wet ** 2 - media)
     wet = wet / max(pico_wet, 1e-9) * max(pico_dry, 1e-9)
-    if tone_hz and tone_hz < sr / 2:                   # el filtro con memoria va en CPU
+    if tone_hz and tone_hz < sr / 2:
         sos = signal.butter(2, tone_hz / (sr / 2), 'low', output='sos')
         wet = signal.sosfilt(sos, wet, axis=0)
     return (1 - mix) * x + mix * wet
 
-
 def saturate(x, sr, drive_db=0.0, mix=0.25, even=0.0, tone_hz=12000.0, picos=None):
-    """Saturacion tanh con armonicos pares opcionales y filtro de tono.
-
-    `picos` = (pico_con_armonicos, pico_seco, media_cuadrada) medidos sobre la señal
-    completa; si no se pasan se miden aquí (correcto, pero no vale para trocear).
-    """
     if _motor_gpu():
         try:
             return _saturate_gpu(x, sr, drive_db, mix, even, tone_hz, picos)
         except Exception:
-            pass                                  # si falla, se sigue en CPU
+            pass
     k = 10 ** (drive_db / 20.0)
     xn = x * k
     wet = np.tanh(xn)
@@ -318,8 +260,6 @@ def saturate(x, sr, drive_db=0.0, mix=0.25, even=0.0, tone_hz=12000.0, picos=Non
     wet = wet / max(pico_wet, 1e-9) * max(pico_dry, 1e-9)
     return (1 - mix) * x + mix * wet
 
-
-# ------------------------------------------------------------ estereo ------
 def _stereo_gpu(x, side_gain_db, mid_gain_db):
     gm = float(10 ** (mid_gain_db / 20.0))
     gl = float(10 ** (side_gain_db / 20.0))
@@ -334,7 +274,6 @@ def _stereo_gpu(x, side_gain_db, mid_gain_db):
     salida = torch.stack([medio * gm + lado * gl, medio * gm - lado * gl], dim=1)
     return _a_numpy(salida)
 
-
 def stereo_width(x, side_gain_db=0.0, mid_gain_db=0.0):
     if x.ndim == 1:
         return x
@@ -342,13 +281,12 @@ def stereo_width(x, side_gain_db=0.0, mid_gain_db=0.0):
         try:
             return _stereo_gpu(x, side_gain_db, mid_gain_db)
         except Exception:
-            pass                                  # si falla, se sigue en CPU
+            pass
     m = (x[:, 0] + x[:, 1]) / 2
     s = (x[:, 0] - x[:, 1]) / 2
     m *= 10 ** (mid_gain_db / 20.0)
     s *= 10 ** (side_gain_db / 20.0)
     return np.stack([m + s, m - s], axis=1)
-
 
 def reverb(x, sr, room=0.3, damp=0.5, wet=0.0, width=1.0):
     if wet <= 0:
@@ -361,18 +299,14 @@ def reverb(x, sr, room=0.3, damp=0.5, wet=0.0, width=1.0):
                dry_level=1.0, width=float(width))
     return r.process(x.astype(np.float32), sr, reset=True).astype(np.float64)
 
-
-# ----------------------------------------------------------- limitador -----
 def _tp_env_cpu(x, sr, block_s=10.0):
-    """Envolvente de pico real (4x sobremuestreo) calculada por bloques (RAM acotada)."""
     n = len(x)
     out = np.zeros(n, dtype=np.float32)
     bs = max(1, int(block_s * sr))
     ctx = 64
     for s in range(0, n, bs):
         e = min(n, s + bs)
-        # contexto por delante y por detrás: si no, las juntas del bloque quedan
-        # recortadas y no coinciden con el cálculo de una pasada de la GPU
+
         ini = max(0, s - ctx)
         seg = x[ini:min(n, e + ctx)]
         ov = signal.resample_poly(seg, 4, 1, axis=0)
@@ -386,17 +320,9 @@ def _tp_env_cpu(x, sr, block_s=10.0):
         out[s:e] = np.maximum(out[s:e], pk[off:off + (e - s)].astype(np.float32))
     return out
 
-
 _ramas_cache = None
 
-
 def _fases_polifasicas():
-    """Las cuatro fases del filtro de sobremuestreo x4 con su desfase exacto.
-
-    Cada fase se convoluciona en la tarjeta con sus coeficientes; el desfase es
-    el que iguala la salida a `resample_poly` de scipy (comprobado con ruido:
-    coincidencia a 1e-7), así que la envolvente GPU es la misma que la de CPU.
-    """
     global _ramas_cache
     if _ramas_cache is None:
         import torch
@@ -406,16 +332,9 @@ def _fases_polifasicas():
                         for k, d in fases]
     return _ramas_cache
 
-
 _H_MOVIL = None
 
-
 def _filtro_movil():
-    """Las 4 fases x 8 coeficientes del interpolador del limitador del móvil.
-
-    Mismo filtro que `Limitador.filtroInterpolador()` de la app Android: sinc de 32
-    tomas con ventana de Blackman, repartido en 4 fases y normalizado por fase.
-    """
     global _H_MOVIL
     if _H_MOVIL is None:
         d = np.zeros(32, dtype=np.float64)
@@ -431,17 +350,8 @@ def _filtro_movil():
         _H_MOVIL = h
     return _H_MOVIL
 
-
 def _tp_env_movil(x, bloque=65536):
-    """Pico real por muestra con el interpolador de 8 tomas del móvil.
 
-    Mismo criterio que el limitador de Android (`Limitador.picoRealEn`): 4 fases x 8
-    tomas evaluadas muestra a muestra, sin sobremuestrear la señal entera. Va por
-    bloques de 64k muestras para que las 32 pasadas caigan en caché en vez de recorrer
-    la canción entera treinta y dos veces.
-    """
-    # (el kernel en C replica bien el resultado, −138 dB, pero en la cadena ya va
-    #  troceada en 12 hilos: numpy gana porque no compite con el OpenMP del .so)
     canales = np.ascontiguousarray(x if x.ndim > 1 else x[:, None], dtype=np.float32)
     n, nc = canales.shape
     h = _filtro_movil().astype(np.float32)
@@ -477,16 +387,7 @@ def _tp_env_movil(x, bloque=65536):
             np.maximum(env[s0:s1], np.abs(acc[ini:fin]).max(axis=1), out=env[s0:s1])
     return env
 
-
 def _tp_env_picos(x, sr, ceiling_db, margen_db=6.0):
-    """Pico real solo EN LOS PICOS de la señal: es donde la interpolación puede pasarse.
-
-    El limitador acaba mirando un máximo deslizante, así que solo los máximos locales
-    mandan. Se evalúa el interpolador de 8 tomas del móvil en esos picos (±4 muestras)
-    y se deja el pico de muestra en el resto: mismo techo respetado, una fracción del
-    trabajo. Equivale a lo que hace el limitador de Android, que solo interpola donde
-    mira.
-    """
     from scipy.ndimage import maximum_filter1d
 
     canales = np.ascontiguousarray(x if x.ndim > 1 else x[:, None], dtype=np.float32)
@@ -496,14 +397,14 @@ def _tp_env_picos(x, sr, ceiling_db, margen_db=6.0):
     env = pico.copy()
     if not (pico >= umbral).any():
         return env
-    # máximo local (ventana de 5) y por encima del umbral
+
     candidatos = np.nonzero((pico >= umbral) & (pico >= maximum_filter1d(pico, 5)))[0]
     if candidatos.size == 0:
         return env
     h = _filtro_movil().astype(np.float32)
     desfases = np.arange(4, -4, -1)
-    idx = np.clip(candidatos[:, None] + desfases[None, :], 0, n - 1)   # (M, 8)
-    trozos = canales[idx]                                              # (M, 8, canales)
+    idx = np.clip(candidatos[:, None] + desfases[None, :], 0, n - 1)
+    trozos = canales[idx]
     mejor = np.abs(trozos).max(axis=(1, 2))
     for fase in range(4):
         acc = (trozos * h[fase][None, :, None]).sum(axis=1)
@@ -511,16 +412,7 @@ def _tp_env_picos(x, sr, ceiling_db, margen_db=6.0):
     np.maximum.at(env, candidatos, mejor)
     return env
 
-
 def _tp_env_candidatos(x, sr, ceiling_db, margen_db=3.0, hilos=None):
-    """Pico real calculado SOLO donde puede importar: muestras cerca del techo.
-
-    Interpolar x4 solo puede levantar el pico una o dos décimas de dB por encima del
-    pico de muestra, así que por debajo de (techo - 3 dB) la envolvente fina no cambia
-    nada: allí vale el pico de muestra. Trabajar así es lo que hace el limitador del
-    móvil (solo mira las muestras que importan) y cuesta una fracción de la envolvente
-    completa de la canción.
-    """
     canales = np.ascontiguousarray(x if x.ndim > 1 else x[:, None], dtype=np.float32)
     n = canales.shape[0]
     pico = np.abs(canales).max(axis=1)
@@ -531,7 +423,7 @@ def _tp_env_candidatos(x, sr, ceiling_db, margen_db=3.0, hilos=None):
         return env
     if not fuera.any():
         return _tp_env_movil(canales)
-    # tramos contiguos de muestras que sí importan, con contexto del filtro
+
     cambio = np.diff(np.concatenate(([1], fuera.view(np.int8), [1])))
     inicios = np.nonzero(cambio == -1)[0]
     finales = np.nonzero(cambio == 1)[0]
@@ -542,12 +434,9 @@ def _tp_env_candidatos(x, sr, ceiling_db, margen_db=3.0, hilos=None):
         env[a:b] = _tp_env_movil(canales[a:b])
     return env
 
-
 _taps_global = None
 
-
 def _taps_y_desfases():
-    """Coeficientes de las cuatro fases del sobremuestreo x4 y su desfase exacto."""
     global _taps_global
     if _taps_global is None:
         h = signal.firwin(20 * 4 + 1, 1.0 / 4, window=('kaiser', 5.0)) * 4
@@ -559,13 +448,7 @@ def _taps_y_desfases():
         _taps_global = (taps, (10, 9, 9, 9))
     return _taps_global
 
-
 def _tp_env_gpu(x, sr, block_s=10.0):
-    """Envolvente de pico real en la GPU: Vulkan si hay driver, si no torch.
-
-    Mismo resultado que la de CPU (±1e-7 por float32) y unas 35 veces más rápida
-    que `resample_poly`.
-    """
     if gpuops is not None:
         taps, desfases = _taps_y_desfases()
         env = gpuops.pico_real(x, taps, desfases)
@@ -573,9 +456,7 @@ def _tp_env_gpu(x, sr, block_s=10.0):
             return env.astype(np.float32)
     return _tp_env_torch(x, sr, block_s)
 
-
 def _tp_env_torch(x, sr, block_s=10.0):
-    """El mismo cálculo con torch (cuando no hay Vulkan pero sí CUDA)."""
     import torch
     import torch.nn.functional as F
 
@@ -596,27 +477,23 @@ def _tp_env_torch(x, sr, block_s=10.0):
         mejor = None
         for k, desfase in fases:
             w = k.view(1, 1, -1).repeat(canales, 1, 1)
-            # el relleno de delante alinea la fase con la muestra original
+
             r = F.conv1d(F.pad(seg, (desfase, k.numel() - 1)), w, groups=canales)[0]
             a = r[:, ctx_real:ctx_real + cuantas].abs()
             mejor = a if mejor is None else torch.maximum(mejor, a)
-        pk = mejor.amax(dim=0).cpu().numpy()          # máximo de las cuatro fases
+        pk = mejor.amax(dim=0).cpu().numpy()
         out[s:e] = np.maximum(out[s:e], pk)
     return out
 
-
 def _tp_env(x, sr, block_s=10.0):
-    """Envolvente de pico real: en la GPU si está forzada o elegida, si no en CPU."""
     if _motor_gpu():
         try:
             return _tp_env_gpu(x, sr, block_s)
         except Exception:
-            pass                                  # si falla, se sigue en CPU
+            pass
     return _tp_env_cpu(x, sr, block_s)
 
-
 def _max_filter(pico, tam):
-    """Máximo deslizante (lookahead); en la GPU cuando el motor es la tarjeta."""
     from scipy.ndimage import maximum_filter1d
     if _motor_gpu():
         try:
@@ -631,18 +508,13 @@ def _max_filter(pico, tam):
             pass
     return maximum_filter1d(pico, size=tam, mode='nearest')
 
-
 def limiter(x, sr, ceiling_db=-1.0, lookahead_ms=5.0, release_ms=60.0, true_peak=True,
             env=None, escala=1.0):
-    """Limita al techo. `env` es la envolvente de pico real de la señal SIN escalar:
-    como el limitador solo la multiplica por una ganancia, se calcula una vez por
-    ajuste y se reutiliza en todas las vueltas del bucle de sonoridad."""
     """Limitador con lookahead y techo true-peak (4x sobremuestreo, sin bajar todo el tema)."""
     ceiling = 10 ** (ceiling_db / 20.0)
     la = max(1, int(sr * lookahead_ms / 1000))
 
     def _envolvente(z):
-        """Pico real: en el trabajo de CPU, solo cerca del techo (como el móvil)."""
         if gpuops is not None and not gpuops.en_cpu():
             return _tp_env(z, sr).astype(np.float64)
         return _tp_env_movil(z).astype(np.float64)
@@ -661,13 +533,11 @@ def limiter(x, sr, ceiling_db=-1.0, lookahead_ms=5.0, release_ms=60.0, true_peak
     target = np.minimum(1.0, ceiling / np.maximum(peak_la, 1e-9))
     a_rl = np.exp(-1.0 / (max(release_ms, 1.0) * 1e-3 * sr))
     g = signal.lfilter([1 - a_rl], [1, -a_rl], target)
-    g = np.minimum(g, target)          # nunca dejar pasar picos
+    g = np.minimum(g, target)
     y = x * (g[:, None] if x.ndim > 1 else g)
-    # seguridad final: si aun asi hubiera picos, atenuar solo donde toca
+
     if true_peak:
-        # cota exacta: al multiplicar por una ganancia, el pico real no pasa de
-        # (pico real de entrada × ganancia máxima). Si con eso ya estamos por debajo
-        # del techo, no hace falta recalcular la envolvente del resultado.
+
         cota = float(np.max(tp_in * g))
         if cota <= ceiling * 1.0005:
             return y
@@ -679,16 +549,9 @@ def limiter(x, sr, ceiling_db=-1.0, lookahead_ms=5.0, release_ms=60.0, true_peak
             y = y * (corr[:, None] if y.ndim > 1 else corr)
     return y
 
-
 _METERS = {}
 
-# Sonoridad integrada (ITU-R BS.1770-4) con el mismo resultado que pyloudnorm pero
-# sin costar medio segundo por medida: pyloudnorm recorre los bloques en Python (una
-# rebanada de numpy por cada bloque de 400 ms, más de 2.000 vueltas en una canción) y
-# filtra los canales en serie. Aquí el filtro va un hilo por canal y las energías por
-# bloque se sacan con una suma acumulada en una sola pasada.
-_GANANCIAS = [1.0, 1.0, 1.0, 1.41, 1.41]      # ganancias por canal de la norma
-
+_GANANCIAS = [1.0, 1.0, 1.0, 1.41, 1.41]
 
 def measure_lufs(x, sr):
     import threading
@@ -705,14 +568,11 @@ def measure_lufs(x, sr):
     muestras, canales = datos.shape
     tg = float(meter.block_size)
     if muestras < tg or canales > 5:
-        return meter.integrated_loudness(datos)   # casos raros: la referencia
+        return meter.integrated_loudness(datos)
 
-    # 1. filtro K. Es lineal, así que cada canal y cada trozo pueden ir por su cuenta:
-    #    cada trozo lleva 1 s de contexto por delante que se tira al pegar (los polos
-    #    del filtro se asientan en milisegundos), y el resultado es el mismo.
     filtrado = datos.copy()
     etapas = list(meter._filters.values())
-    contexto = int(sr)                       # 1 s de calentamiento
+    contexto = int(sr)
     try:
         import motor as _motor
         hilos_total = _motor.hilos_cpu()
@@ -738,9 +598,6 @@ def measure_lufs(x, sr):
         for canal in range(canales):
             _filtrar_trozo(canal, 0, muestras)
 
-    # 2. energía de cada bloque (400 ms, paso del 25 %). Los bloques de la norma son
-    #    exactamente 4 pasos consecutivos, así que basta sumar por pasos (una pasada,
-    #    sin copias) y luego sumar 4 seguidos con una suma acumulada pequeña.
     paso = 1.0 - float(meter.overlap)
     duracion = muestras / float(sr)
     bloques = int(np.round(((duracion - tg) / (tg * paso))) + 1)
@@ -754,14 +611,13 @@ def measure_lufs(x, sr):
     cuad = filtrado * filtrado
     if relleno:
         cuad = np.vstack([cuad, np.zeros((relleno, canales))])
-    por_paso = cuad.reshape(n_pasos, paso_muestras, canales).sum(axis=1)   # (pasos, canales)
+    por_paso = cuad.reshape(n_pasos, paso_muestras, canales).sum(axis=1)
     del cuad
     acumulado = np.vstack([np.zeros((1, canales)), np.cumsum(por_paso, axis=0)])
     siguientes = np.minimum(np.arange(bloques) + 4, n_pasos)
     suma = acumulado[siguientes] - acumulado[np.arange(bloques)]
-    z = (suma / (tg * sr)).T                       # (canales, bloques)
+    z = (suma / (tg * sr)).T
 
-    # 3. enlucido (gating) de la norma, igual que pyloudnorm
     ganancias = np.array(_GANANCIAS[:canales])
     with np.errstate(divide='ignore', invalid='ignore'):
         l_j = -0.691 + 10.0 * np.log10(np.sum(ganancias[:, None] * z, axis=0))
@@ -773,7 +629,6 @@ def measure_lufs(x, sr):
         j_g = [j for j, valor in enumerate(l_j) if valor > gamma_r and valor > -70.0]
         z_media = np.nan_to_num(np.array([np.mean(z[i, j_g]) for i in range(canales)]))
         return float(-0.691 + 10.0 * np.log10(np.sum(ganancias * z_media)))
-
 
 def normalize_lufs(x, sr, target=-14.0, ceiling_db=-1.0):
     cur = measure_lufs(x, sr)

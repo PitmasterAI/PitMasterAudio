@@ -1,4 +1,4 @@
-# auto-generated file
+
 import _cffi_backend
 
 ffi = _cffi_backend.FFI('_sounddevice',

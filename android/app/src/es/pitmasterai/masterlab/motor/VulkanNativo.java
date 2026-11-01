@@ -1,6 +1,5 @@
 package es.pitmasterai.masterlab.motor;
 
-/* loaded from: classes.dex */
 public final class VulkanNativo {
     private static boolean activo = false;
     private static boolean cargada = false;
@@ -83,13 +82,10 @@ public final class VulkanNativo {
         return z;
     }
 
-    /* JADX WARN: Code restructure failed: missing block: B:17:0x0025, code lost:
     
-        if (r3 < es.pitmasterai.masterlab.motor.VulkanNativo.msCpu) goto L17;
-     */
-    /*
-        Code decompiled incorrectly, please refer to instructions dump.
-    */
+
+    
+
     public static synchronized void preparar(boolean z) {
         synchronized (VulkanNativo.class) {
             boolean z2 = false;

@@ -1,18 +1,4 @@
-#!/usr/bin/env python3
-"""Motor de sonido propio del panel: un solo flujo de salida para todo.
 
-Por qué existe: con dos reproductores del navegador el cambio de ajuste se oye
-(un parón de milisegundos, un salto de posición o las dos versiones a la vez) y
-además el navegador puede bloquear el arranque automático. Aquí hay una única
-tarjeta de sonido abierta y un único contador de posición: cambiar de versión es
-cambiar de dónde se leen las muestras, en el mismo instante y en la misma
-posición. No hay parón, no hay relevo entre elementos y no hay política de
-reproducción que lo impida.
-
-El panel web habla con esto por HTTP (/api/repro/*). Si no hay portaudio ni
-tarjeta, `disponible()` devuelve False y el JS se queda con los reproductores
-del navegador como hasta ahora.
-"""
 import os
 import sys
 import threading
@@ -20,45 +6,31 @@ import time
 
 import numpy as np
 
-# Estas dos afinaciones son SOLO para el proceso de sonido, que es el que tiene un
-# hilo que no puede llegar tarde nunca. Antes se hacían al importar este módulo, y
-# como el panel también lo importa, el panel entero se quedaba con el cambio de hilo
-# a 1 ms: con 12 hilos troceando la señal eso multiplica los cambios de contexto y
-# el masterizado se arrastra (medido: es la diferencia entre ir fino y "tardar la
-# vida"). Se aplican desde `afinar_interprete()`, que llama `audio_proceso.py`.
 def afinar_interprete():
-    """Afina el intérprete para el proceso que abre la tarjeta de sonido."""
     try:
-        sys.setswitchinterval(0.001)   # con 5 ms un bloque puede quedarse sin rellenar
+        sys.setswitchinterval(0.001)
     except Exception:
         pass
     try:
         import gc as _gc
-        _gc.freeze()                   # el recolector no puede parar el hilo de audio
+        _gc.freeze()
         _gc.set_threshold(80000, 800, 800)
     except Exception:
         pass
 
 SR = 48000
 CANALES = 2
-BLOQUE = 2048         # ~43 ms por bloque: margen de sobra para Python
-LATENCIA = 0.25       # colchón en la tarjeta: aguanta un parón del intérprete
-FUNDIDO = 480         # 10 ms de cruce al cambiar de versión (evita el chasquido)
-PRESUPUESTO_MIN_MB = 700   # mínimo reservado para las versiones ya calculadas
-PRESUPUESTO_MAX_MB = 2600  # tope, aunque haya memoria de sobra
+BLOQUE = 2048
+LATENCIA = 0.25
+FUNDIDO = 480
+PRESUPUESTO_MIN_MB = 700
+PRESUPUESTO_MAX_MB = 2600
 
 def _precargar_portaudio():
-    """Dice a sounddevice dónde está portaudio si viaja dentro del paquete.
-
-    `ctypes.util.find_library()` solo mira el catálogo del sistema (ldconfig): una
-    librería copiada al lado de la app no la encuentra, y sounddevice se queda sin
-    sonido aunque el fichero esté ahí. Si hay una copia propia se carga primero y
-    se le devuelve esa ruta a quien pregunte por «portaudio».
-    """
     import ctypes
     import ctypes.util
     aqui = os.path.dirname(os.path.abspath(__file__))
-    arriba = os.path.dirname(os.path.dirname(aqui))       # /opt/pitmasteraudio | usr del AppImage
+    arriba = os.path.dirname(os.path.dirname(aqui))
     candidatos = [os.environ.get('PORTAUDIO_LIB'), os.environ.get('PORTAAUDIO_LIB')]
     for carpeta in (os.path.join(arriba, 'lib'), os.path.join(os.path.dirname(arriba), 'lib'),
                     os.path.join(aqui, 'lib')):
@@ -82,19 +54,17 @@ def _precargar_portaudio():
         return ruta
     return None
 
-
 _precargar_portaudio()
 
 try:
     try:
         import sounddevice as sd
     except ImportError:
-        # el paquete trae sounddevice dentro de _vendor: así funciona sin
-        # python3-sounddevice, que no está en todos los repos
+
         sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                         '_vendor'))
         import sounddevice as sd
-except Exception:      # sin portaudio no hay sonido propio
+except Exception:
     sd = None
 
 try:
@@ -102,15 +72,8 @@ try:
 except Exception:
     sf = None
 
-
 def _decodificar(ruta, frecuencia=SR):
-    """WAV/FLAC/MP3 -> float32 (muestras, 2) a la frecuencia de la tarjeta.
 
-    La tarjeta puede no aceptar 48 kHz (pasa en Windows con WASAPI compartido):
-    en ese caso se abre a la frecuencia que pida y el audio se remuestrea aquí.
-    """
-    # por trozos de 2 s con una pausa entre ellos: una lectura entera de 3 minutos
-    # deja al hilo de audio sin turno y se oye un tirón justo al empezar
     trozos = []
     with sf.SoundFile(ruta) as fichero:
         sr = fichero.samplerate
@@ -132,20 +95,18 @@ def _decodificar(ruta, frecuencia=SR):
         datos = signal.resample_poly(datos, int(frecuencia) // factor, int(sr) // factor, axis=0)
     return np.ascontiguousarray(datos, dtype=np.float32)
 
-
 class MotorAudio:
-    """Un flujo de salida continuo y una posición compartida por todas las versiones."""
 
     def __init__(self):
         self._lk = threading.Lock()
-        self._cache = {}              # clave -> float32 (muestras, 2)
-        self._orden = []              # uso reciente, para no crecer sin freno
+        self._cache = {}
+        self._orden = []
         self._cargando = set()
-        self._clave = None            # versión que está sonando
+        self._clave = None
         self._fuente = None
-        self._pos = 0                 # muestra actual de la línea de tiempo común
+        self._pos = 0
         self._sonando = False
-        self._entrante = None         # (clave, muestras, posición) del cruce en curso
+        self._entrante = None
         self._fase = 0
         self._pendiente = None
         self._flujo = None
@@ -156,14 +117,11 @@ class MotorAudio:
         self._sr = SR
         self._abrir()
 
-    # ------------------------------------------------------------- tarjeta
     def _abrir(self):
         if sd is None or sf is None:
             self._error = 'sin portaudio'
             return
-        # varias formas de abrir: si la tarjeta no acepta 48 kHz se abre a lo que
-        # ella quiera y el audio se remuestrea (ver _decodificar). En Windows se
-        # busca primero WASAPI: con MME el reloj del dispositivo va mal y cruje.
+
         dispositivo = self._dispositivo_salida()
         intentos = [dict(samplerate=SR, channels=CANALES, blocksize=self._bloque, latency=LATENCIA),
                     dict(samplerate=SR, channels=CANALES, blocksize=self._bloque * 2, latency=0.4),
@@ -189,7 +147,6 @@ class MotorAudio:
 
     @staticmethod
     def _dispositivo_salida():
-        """En Windows, el dispositivo de WASAPI (MME da tirones); en Linux, el de siempre."""
         try:
             if not sys.platform.startswith('win'):
                 return None
@@ -203,19 +160,14 @@ class MotorAudio:
         return None
 
     def _vigilar(self):
-        """Si la tarjeta avisa de desbordes, se abre con un bloque más grande.
-
-        En Windows con MME (y en equipos muy cargados) el bloque pequeño no llega a
-        tiempo y se oye un chasquido; doblar el buffer lo arregla sin tocar el panel.
-        """
         while True:
             time.sleep(2.0)
             actual = self._desbordes
             if actual <= self._ultimo_desborde + 30:
-                continue            # avisos sueltos: no se toca nada
+                continue
             self._ultimo_desborde = actual
             if self._bloque >= BLOQUE * 4:
-                continue            # ya está todo lo grande que se puede poner
+                continue
             self._bloque *= 2
             try:
                 flujo = self._flujo
@@ -229,10 +181,8 @@ class MotorAudio:
     def disponible(self):
         return self._flujo is not None
 
-    # ------------------------------------------------------------- audio
     @staticmethod
     def _leer(datos, pos, n):
-        """n muestras a partir de `pos`, dando la vuelta al final (bucle)."""
         salida = np.empty((n, CANALES), dtype=np.float32)
         hecho = 0
         largo = len(datos)
@@ -249,7 +199,7 @@ class MotorAudio:
 
     def _callback(self, salida, fotogramas, _momento, estado):
         if estado:
-            self._desbordes += 1        # portaudio avisa: no ha llegado el bloque a tiempo
+            self._desbordes += 1
         salida.fill(0.0)
         if not self._sonando or self._fuente is None:
             return
@@ -270,14 +220,13 @@ class MotorAudio:
             self._fase -= k
             e0 += k
             if self._fase <= 0:
-                # a partir de aquí manda la versión nueva, en la MISMA posición
+
                 self._clave = clave
                 self._fuente = datos
                 self._entrante = None
             else:
                 self._entrante = (clave, datos, e0)
 
-    # ------------------------------------------------------------- caché
     @staticmethod
     def _ram_libre_mb():
         try:
@@ -313,8 +262,6 @@ class MotorAudio:
         return int(max(PRESUPUESTO_MIN_MB, min(PRESUPUESTO_MAX_MB, libre * 0.45)))
 
     def _guardar(self, clave, datos):
-        """Guarda la versión decodificada en RAM. Los ajustes ya calculados se quedan
-        aquí: pasar de uno a otro es instantáneo y no se vuelve a decodificar."""
         with self._lk:
             self._cache[clave] = datos
             if clave in self._orden:
@@ -331,11 +278,9 @@ class MotorAudio:
                     self._orden.remove(vieja)
 
     def preparar(self, clave, ruta):
-        """Deja la versión decodificada en RAM sin tocar lo que está sonando."""
         return self.cargar(clave, ruta)
 
     def cargar(self, clave, ruta):
-        """Decodifica en segundo plano. Si lo que llega es lo que se está esperando, entra."""
         if not self.disponible() or not ruta or not os.path.exists(ruta):
             return False
         with self._lk:
@@ -361,16 +306,13 @@ class MotorAudio:
         with self._lk:
             return clave in self._cache
 
-    # ------------------------------------------------------------- mandos
     def poner(self, clave, ruta, desde=None, sonar=True):
-        """Pone una versión y arranca desde `desde` (segundos)."""
         self.cargar(clave, ruta)
         self._pendiente = {'accion': 'poner', 'clave': clave, 'desde': desde, 'sonar': sonar}
         self._aplicar_pendiente()
         return True
 
     def cambiar(self, clave, ruta, sonar=None):
-        """Cambia de versión en la posición exacta en la que va: sin parón y sin salto."""
         self.cargar(clave, ruta)
         self._pendiente = {'accion': 'cambiar', 'clave': clave, 'sonar': sonar}
         self._aplicar_pendiente()
@@ -385,7 +327,7 @@ class MotorAudio:
             datos = self._cache.get(clave)
         if datos is None:
             if self.lista(clave) is False and self._cargando:
-                return          # la descarga en curso volverá a llamar aquí al terminar
+                return
             return
         self._pendiente = None
         if pendiente['accion'] == 'poner':
@@ -398,7 +340,7 @@ class MotorAudio:
                 if pendiente['sonar']:
                     self._sonando = True
             return
-        # cambiar: cruce en la misma posición, el sonido no se corta en ningún momento
+
         with self._lk:
             queria_sonar = pendiente['sonar']
             if self._clave == clave and self._entrante is None:
@@ -437,7 +379,6 @@ class MotorAudio:
             self._fase = 0
 
     def soltar(self, conservar=None):
-        """Suelta las versiones decodificadas que no son de la canción en curso."""
         with self._lk:
             for clave in list(self._cache):
                 if clave == self._clave or (conservar and str(clave).startswith(conservar)):
@@ -453,7 +394,6 @@ class MotorAudio:
                 self._entrante = None
                 self._fase = 0
 
-    # ------------------------------------------------------------- estado
     def estado(self):
         with self._lk:
             fuente = self._fuente
@@ -470,39 +410,22 @@ class MotorAudio:
                 'desbordes': self._desbordes,
             }
 
-
 MOTOR = None
 
-
 def motor():
-    """El motor de verdad. La tarjeta se abre la primera vez que se pide."""
     global MOTOR
     if MOTOR is None:
         MOTOR = MotorAudio()
     return MOTOR
 
-
-# ---------------------------------------------------------------------------
-# Proceso aparte: solo saca sonido. Así ningún masterizado, análisis ni recolector
-# de basura del panel puede dejar al hilo de audio sin turno (los tirones).
-# ---------------------------------------------------------------------------
 ACCIONES = ('poner', 'cambiar', 'preparar', 'pausa', 'seguir', 'ir', 'parar', 'soltar')
 
-
 def servir(puerto, padre=None):
-    """Atiende órdenes por un socket local hasta que el panel muera."""
     import json
     import socket
-    motor()                       # se abre la tarjeta aquí, en ESTE proceso
+    motor()
 
     def padre_vivo(pid):
-        """¿Sigue vivo el panel?
-
-        En Linux basta `os.getppid()`, pero en Windows devuelve SIEMPRE el PID con el
-        que se creó el proceso aunque el padre ya no exista, así que el vigilante no
-        saltaba nunca y el audio seguía sonando al cerrar la ventana. Ahí hay que
-        preguntar al sistema por el proceso.
-        """
         if sys.platform.startswith('win'):
             try:
                 import ctypes
@@ -521,7 +444,7 @@ def servir(puerto, padre=None):
         while True:
             time.sleep(1.0)
             if padre and not padre_vivo(padre):
-                os._exit(0)       # el panel se cerró: no queda nada suelto
+                os._exit(0)
 
     def atender(conexion):
         try:
@@ -574,7 +497,6 @@ def servir(puerto, padre=None):
         threading.Thread(target=atender, args=(conexion,), daemon=True).start()
 
 class ClienteProceso:
-    """Habla con el proceso de sonido. Misma interfaz que el motor de dentro."""
 
     def __init__(self, puerto, pid=None):
         self.puerto = int(puerto)

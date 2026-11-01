@@ -1,29 +1,12 @@
-"""Cómputo en GPU por Vulkan, sin CUDA ni drivers propietarios.
-
-Habla libvulkan.so.1 directamente (ctypes) y lanza shaders SPIR-V compilados con
-glslc. Vale igual para AMD (RADV), Intel, NVIDIA y llvmpipe: lo único que hace
-falta es que el aparato tenga un driver Vulkan, que es lo normal en Linux,
-Windows y Android.
-
-Operaciones que expone (todas sobre float32 entrelazado):
-
-    escalar(x, g)                  x * g
-    mul_por_vector(x, gan, canales) x * gan[trama]
-    estereo_ms(x, gm, gl)          matriz medio/lado
-    saturar(x, k)                  tanh(x * k)
-    pico_real(x, taps, desfases, ktaps)  envolvente de pico real por fases
-"""
 import ctypes
 import os
 import struct
 import threading
 
-# Vulkan comparte pool de descriptores y command buffer: un hilo a la vez
 _CERROJO = threading.RLock()
 
 import numpy as np
 
-# ------------------------------------------------------------------ constantes
 VK_SUCCESS = 0
 VK_STRUCTURE_TYPE_APPLICATION_INFO = 0
 VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO = 1
@@ -61,14 +44,11 @@ VK_COMMAND_BUFFER_LEVEL_PRIMARY = 0
 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT = 0x00010000
 VK_ACCESS_MEMORY_READ_BIT = 0x00008000
 
-
-# -------------------------------------------------------------------- structs
 class VkApplicationInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("pApplicationName", ctypes.c_char_p), ("applicationVersion", ctypes.c_uint32),
                 ("pEngineName", ctypes.c_char_p), ("engineVersion", ctypes.c_uint32),
                 ("apiVersion", ctypes.c_uint32)]
-
 
 class VkInstanceCreateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
@@ -77,23 +57,19 @@ class VkInstanceCreateInfo(ctypes.Structure):
                 ("enabledExtensionCount", ctypes.c_uint32),
                 ("ppEnabledExtensionNames", ctypes.c_void_p)]
 
-
 class VkExtent3D(ctypes.Structure):
     _fields_ = [("width", ctypes.c_uint32), ("height", ctypes.c_uint32),
                 ("depth", ctypes.c_uint32)]
-
 
 class VkQueueFamilyProperties(ctypes.Structure):
     _fields_ = [("queueFlags", ctypes.c_uint32), ("queueCount", ctypes.c_uint32),
                 ("timestampValidBits", ctypes.c_uint32),
                 ("minImageTransferGranularity", VkExtent3D)]
 
-
 class VkDeviceQueueCreateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("flags", ctypes.c_uint32), ("queueFamilyIndex", ctypes.c_uint32),
                 ("queueCount", ctypes.c_uint32), ("pQueuePriorities", ctypes.c_void_p)]
-
 
 class VkDeviceCreateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
@@ -104,7 +80,6 @@ class VkDeviceCreateInfo(ctypes.Structure):
                 ("ppEnabledExtensionNames", ctypes.c_void_p),
                 ("pEnabledFeatures", ctypes.c_void_p)]
 
-
 class VkBufferCreateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("flags", ctypes.c_uint32), ("size", ctypes.c_uint64),
@@ -112,19 +87,15 @@ class VkBufferCreateInfo(ctypes.Structure):
                 ("queueFamilyIndexCount", ctypes.c_uint32),
                 ("pQueueFamilyIndices", ctypes.c_void_p)]
 
-
 class VkMemoryRequirements(ctypes.Structure):
     _fields_ = [("size", ctypes.c_uint64), ("alignment", ctypes.c_uint64),
                 ("memoryTypeBits", ctypes.c_uint32)]
 
-
 class VkMemoryType(ctypes.Structure):
     _fields_ = [("propertyFlags", ctypes.c_uint32), ("heapIndex", ctypes.c_uint32)]
 
-
 class VkMemoryHeap(ctypes.Structure):
     _fields_ = [("size", ctypes.c_uint64), ("flags", ctypes.c_uint32)]
-
 
 class VkPhysicalDeviceMemoryProperties(ctypes.Structure):
     _fields_ = [("memoryTypeCount", ctypes.c_uint32),
@@ -132,34 +103,28 @@ class VkPhysicalDeviceMemoryProperties(ctypes.Structure):
                 ("memoryHeapCount", ctypes.c_uint32),
                 ("memoryHeaps", VkMemoryHeap * 16)]
 
-
 class VkMemoryAllocateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("allocationSize", ctypes.c_uint64), ("memoryTypeIndex", ctypes.c_uint32)]
-
 
 class VkShaderModuleCreateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("flags", ctypes.c_uint32), ("codeSize", ctypes.c_size_t),
                 ("pCode", ctypes.c_void_p)]
 
-
 class VkDescriptorSetLayoutBinding(ctypes.Structure):
     _fields_ = [("binding", ctypes.c_uint32), ("descriptorType", ctypes.c_uint32),
                 ("descriptorCount", ctypes.c_uint32), ("stageFlags", ctypes.c_uint32),
                 ("pImmutableSamplers", ctypes.c_void_p)]
-
 
 class VkDescriptorSetLayoutCreateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("flags", ctypes.c_uint32), ("bindingCount", ctypes.c_uint32),
                 ("pBindings", ctypes.c_void_p)]
 
-
 class VkPushConstantRange(ctypes.Structure):
     _fields_ = [("stageFlags", ctypes.c_uint32), ("offset", ctypes.c_uint32),
                 ("size", ctypes.c_uint32)]
-
 
 class VkPipelineLayoutCreateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
@@ -167,13 +132,11 @@ class VkPipelineLayoutCreateInfo(ctypes.Structure):
                 ("pSetLayouts", ctypes.c_void_p), ("pushConstantRangeCount", ctypes.c_uint32),
                 ("pPushConstantRanges", ctypes.c_void_p)]
 
-
 class VkPipelineShaderStageCreateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("flags", ctypes.c_uint32), ("stage", ctypes.c_uint32),
                 ("module", ctypes.c_void_p), ("pName", ctypes.c_char_p),
                 ("pSpecializationInfo", ctypes.c_void_p)]
-
 
 class VkComputePipelineCreateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
@@ -181,27 +144,22 @@ class VkComputePipelineCreateInfo(ctypes.Structure):
                 ("layout", ctypes.c_void_p), ("basePipelineHandle", ctypes.c_void_p),
                 ("basePipelineIndex", ctypes.c_int32)]
 
-
 class VkDescriptorPoolSize(ctypes.Structure):
     _fields_ = [("type", ctypes.c_uint32), ("descriptorCount", ctypes.c_uint32)]
-
 
 class VkDescriptorPoolCreateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("flags", ctypes.c_uint32), ("maxSets", ctypes.c_uint32),
                 ("poolSizeCount", ctypes.c_uint32), ("pPoolSizes", ctypes.c_void_p)]
 
-
 class VkDescriptorSetAllocateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("descriptorPool", ctypes.c_void_p), ("descriptorSetCount", ctypes.c_uint32),
                 ("pSetLayouts", ctypes.c_void_p)]
 
-
 class VkDescriptorBufferInfo(ctypes.Structure):
     _fields_ = [("buffer", ctypes.c_void_p), ("offset", ctypes.c_uint64),
                 ("range", ctypes.c_uint64)]
-
 
 class VkWriteDescriptorSet(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
@@ -210,22 +168,18 @@ class VkWriteDescriptorSet(ctypes.Structure):
                 ("descriptorType", ctypes.c_uint32), ("pImageInfo", ctypes.c_void_p),
                 ("pBufferInfo", ctypes.c_void_p), ("pTexelBufferView", ctypes.c_void_p)]
 
-
 class VkCommandPoolCreateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("flags", ctypes.c_uint32), ("queueFamilyIndex", ctypes.c_uint32)]
-
 
 class VkCommandBufferAllocateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("commandPool", ctypes.c_void_p), ("level", ctypes.c_uint32),
                 ("commandBufferCount", ctypes.c_uint32)]
 
-
 class VkCommandBufferBeginInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("flags", ctypes.c_uint32), ("pInheritanceInfo", ctypes.c_void_p)]
-
 
 class VkBufferMemoryBarrier(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
@@ -234,7 +188,6 @@ class VkBufferMemoryBarrier(ctypes.Structure):
                 ("dstQueueFamilyIndex", ctypes.c_uint32), ("buffer", ctypes.c_void_p),
                 ("offset", ctypes.c_uint64), ("size", ctypes.c_uint64)]
 
-
 class VkSubmitInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("waitSemaphoreCount", ctypes.c_uint32), ("pWaitSemaphores", ctypes.c_void_p),
@@ -242,34 +195,29 @@ class VkSubmitInfo(ctypes.Structure):
                 ("pCommandBuffers", ctypes.c_void_p), ("signalSemaphoreCount", ctypes.c_uint32),
                 ("pSignalSemaphores", ctypes.c_void_p)]
 
-
 class VkFenceCreateInfo(ctypes.Structure):
     _fields_ = [("sType", ctypes.c_uint32), ("pNext", ctypes.c_void_p),
                 ("flags", ctypes.c_uint32)]
 
-
-# ------------------------------------------------------------------- el motor
 class Vulkan:
-    """Contexto Vulkan mínimo para lanzar shaders de cómputo."""
 
     def __init__(self, carpeta_shaders=None):
         self.listo = False
         self.nombre = ''
         self.error = ''
         self._shaders = {}
-        self._pozo = {}        # buffers ya creados por tamaño (se reutilizan)
-        self._pozo_i = {}      # siguiente hueco libre dentro de la llamada en curso
+        self._pozo = {}
+        self._pozo_i = {}
         carpeta = carpeta_shaders or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vk')
         self.carpeta = carpeta
         try:
             self._abrir()
             self.listo = True
-        except Exception as e:                       # sin driver Vulkan se sigue en CPU
+        except Exception as e:
             self.error = '%s: %s' % (type(e).__name__, e)
             self.listo = False
 
     def _prototipos(self):
-        """Firma de cada función: sin esto ctypes recorta los punteros y revienta."""
         vk = self.vk
         V = ctypes.c_void_p
         U = ctypes.c_uint32
@@ -317,11 +265,8 @@ class Vulkan:
             f.restype = ctypes.c_int
             f.argtypes = args
 
-    # ------------------------------------------------------------- arranque
     def _abrir(self):
-        # El cargador de Vulkan se llama distinto en cada sistema. Con el nombre de
-        # Linux fijo, en Windows no se cargaba nunca y la tarjeta se quedaba sin usar
-        # (un RTX 3090 parado mientras el panel iba por CPU, el doble de lento).
+
         self.vk = None
         errores = []
         for nombre in ('vulkan-1.dll', 'vulkan-1', 'libvulkan.so.1',
@@ -357,14 +302,12 @@ class Vulkan:
         vk.vkEnumeratePhysicalDevices(inst, ctypes.byref(cuenta), dispositivos)
         self.fisico = dispositivos[0]
 
-        # nombre del aparato (VkPhysicalDeviceProperties: deviceName va tras 5 uint32)
         crudo = ctypes.create_string_buffer(4096)
         vk.vkGetPhysicalDeviceProperties(self.fisico, crudo)
         self.nombre = crudo.raw[20:276].split(b'\x00')[0].decode('utf-8', 'replace')
-        # VkPhysicalDeviceProperties: apiVersion, driverVersion, vendorID, deviceID, deviceType
+
         self.tipo = int.from_bytes(crudo.raw[16:20], 'little')
 
-        # cola de cómputo
         nfam = ctypes.c_uint32(0)
         vk.vkGetPhysicalDeviceQueueFamilyProperties(self.fisico, ctypes.byref(nfam), None)
         familias = (VkQueueFamilyProperties * nfam.value)()
@@ -432,7 +375,6 @@ class Vulkan:
         vk.vkCreateFence(self.dispositivo, ctypes.byref(crear_fence), None,
                          ctypes.byref(self.fence))
 
-    # ----------------------------------------------------------- tuberías
     def _tuberia(self, shader, n_buffers, push_tam):
         clave = (shader, n_buffers, push_tam)
         if clave in self._shaders:
@@ -493,7 +435,6 @@ class Vulkan:
         self._shaders[clave] = (tuberia, layout, layout_desc, buf, modulo)
         return self._shaders[clave]
 
-    # ------------------------------------------------------------ memoria
     def _tipo_memoria(self, requisitos):
         for i in range(self.memorias.memoryTypeCount):
             if not (requisitos.memoryTypeBits & (1 << i)):
@@ -542,11 +483,6 @@ class Vulkan:
         self.vk.vkFreeMemory(self.dispositivo, memoria, None)
 
     def _del_pozo(self, tam_bytes):
-        """Buffer creado y mapeado del tamaño pedido, reutilizado entre llamadas.
-
-        Crear y mapear memoria en cada lanzamiento cuesta más que el propio cálculo;
-        en las tarjetas NVIDIA era la diferencia entre 40 y 95 ms por llamada.
-        """
         tam = max(tam_bytes, 16)
         pila = self._pozo.get(tam)
         if pila is None:
@@ -558,14 +494,12 @@ class Vulkan:
         return pila[i]
 
     def _subir(self, datos):
-        """Copia `datos` a un buffer del pozo y lo devuelve."""
         b = self._del_pozo(len(datos) if datos else 16)
         if datos:
             ctypes.memmove(b[2], datos, len(datos))
         return b
 
     def poda(self, maximo=24):
-        """Suelta los buffers de los tamaños que ya no se usan (deja los más repetidos)."""
         if len(self._pozo) <= maximo:
             return
         for tam in list(self._pozo.keys())[:-maximo]:
@@ -575,22 +509,19 @@ class Vulkan:
                 except Exception:
                     pass
 
-    # ------------------------------------------------------------- lanzar
     def ejecutar(self, shader, entradas, salida_bytes, push, grupos):
-        """Un solo hilo a la vez: el pool de descriptores y el command buffer son compartidos."""
         with _CERROJO:
             self.poda()
             return self._ejecutar_bloque(shader, entradas, salida_bytes, push, grupos)
 
     def _ejecutar_bloque(self, shader, entradas, salida_bytes, push, grupos):
-        """entradas: lista de bytes (float32); salida_bytes: tamaño de la salida."""
         tuberia, layout, layout_desc, _buf, _mod = self._tuberia(shader, len(entradas) + 1,
                                                                  len(push))
         vk = self.vk
         creados = []
         try:
             vk.vkResetDescriptorPool(self.dispositivo, self.pool_desc, 0)
-            self._pozo_i.clear()            # dentro de una llamada, cada buffer es distinto
+            self._pozo_i.clear()
             for datos in entradas:
                 creados.append(self._subir(datos))
             salida = self._del_pozo(salida_bytes)
@@ -654,9 +585,8 @@ class Vulkan:
             crudo = ctypes.string_at(salida[2], salida_bytes)
             return crudo
         finally:
-            pass            # los buffers se quedan en el pozo para la siguiente llamada
+            pass
 
-    # ----------------------------------------------------------- atajos
     def escalar(self, x, g):
         x = np.ascontiguousarray(x, dtype=np.float32)
         n = x.size
@@ -690,7 +620,6 @@ class Vulkan:
         return np.frombuffer(crudo, dtype=np.float32, count=n).reshape(x.shape)
 
     def pico_real(self, x, taps, desfases):
-        """x (tramas, canales); taps (4, k); desfases [d0..d3] -> envolvente (tramas,)."""
         x = np.ascontiguousarray(x, dtype=np.float32)
         tramas = x.size // x.shape[1] if x.ndim > 1 else x.size
         canales = x.shape[1] if x.ndim > 1 else 1
@@ -703,13 +632,10 @@ class Vulkan:
                               (tramas + 127) // 128)
         return np.frombuffer(crudo, dtype=np.float32, count=tramas)
 
-
 _instancia = None
 _probado = False
 
-
 def motor():
-    """Devuelve el contexto Vulkan compartido, o None si no hay driver."""
     global _instancia, _probado
     if not _probado:
         _probado = True
@@ -720,13 +646,11 @@ def motor():
             _instancia = None
     return _instancia
 
-
 def describe():
     v = motor()
     if v is None:
         return 'Vulkan: no disponible'
     return 'Vulkan: ' + v.nombre
-
 
 if __name__ == '__main__':
     import time

@@ -5,11 +5,6 @@ import android.content.SharedPreferences;
 import java.util.HashMap;
 import java.util.Locale;
 
-/**
- * Idioma de la app: español (por defecto) o inglés.
- * La clave del mapa es EXACTAMENTE el literal español que aparece en el código,
- * para poder envolverlo con Idioma.t("...") sin tocar el texto original.
- */
 public final class Idioma {
     public static final String ES = "es";
     public static final String EN = "en";
@@ -22,13 +17,11 @@ public final class Idioma {
     private Idioma() {
     }
 
-    /** Traducciones al revés (inglés -> español), para repintar sin recrear nada. */
+    
     private static final HashMap<String, String> INVERSA = new HashMap<>();
 
-    /**
-     * Devuelve el texto en el idioma actual a partir de lo que hay pintado ahora
-     * (valga en español o en inglés). Null si no es un texto traducible.
-     */
+    
+
     public static String de(String texto) {
         if (texto == null) {
             return null;
@@ -52,7 +45,7 @@ public final class Idioma {
     }
 
     static {
-        // ---------------- cabecera / tarjetas ----------------
+        
         m("Remasterizado de Audio por Ecualización", "Audio Remastering by Equalization");
         m("Elegir audio", "Choose audio");
         m("***No se recomienda subir audio ya remasterizado***", "***Uploading already-remastered audio is not recommended***");
@@ -75,7 +68,7 @@ public final class Idioma {
         m("Ajustes finos ▸", "Fine tuning ▸");
         m("Ajustes finos ▾", "Fine tuning ▾");
 
-        // ---------------- ajustes finos ----------------
+        
         m("Sonoridad (LUFS)", "Loudness (LUFS)");
         m("Auto", "Auto");
         m("Auto ✓", "Auto ✓");
@@ -85,14 +78,14 @@ public final class Idioma {
         m("Intensidad del efecto: ", "Effect intensity: ");
         m("♥ Donar", "♥ Donate");
 
-        // ---------------- estado / progreso ----------------
+        
         m("Analizando…", "Analyzing…");
         m("Trabajando…", "Working…");
         m("Aplicando ", "Applying ");
         m("Por cómo suena, encaja ", "Based on how it sounds, ");
         m(". Empiezas con Amplificador; cámbialo cuando quieras.", ". You start with Amplifier; change it whenever you want.");
 
-        // ---------------- medidas / formatos ----------------
+        
         m("%s · %.1f LUFS · pico %.2f dBTP", "%s · %.1f LUFS · peak %.2f dBTP");
         m("%s · %.1f LUFS · audio largo", "%s · %.1f LUFS · long audio");
         m("%s · %.1f LUFS", "%s · %.1f LUFS");
@@ -101,7 +94,7 @@ public final class Idioma {
         m(" · graves %+.1f dB · agudos %+.1f dB", " · lows %+.1f dB · highs %+.1f dB");
         m("%.1f LUFS · cresta %.1f dB · estéreo %.2f", "%.1f LUFS · crest %.1f dB · stereo %.2f");
 
-        // ---------------- avisos y errores ----------------
+        
         m("Esa canción es muy larga para el móvil (más de 6 minutos).", "That song is too long for this phone (over 6 minutes).");
         m("La canción ocupa demasiado para este móvil. Prueba con un fragmento.", "The song is too big for this phone. Try a shorter clip.");
         m("No se pudo leer el audio: ", "Could not read the audio: ");
@@ -121,18 +114,18 @@ public final class Idioma {
         m("Compartir registro", "Share log");
         m("MasterLab registro", "MasterLab log");
 
-        // ---------------- motor (texto de cabecera) ----------------
+        
         m("Motor principal: ", "Main engine: ");
         m("Motor secundario: ", "Secondary engine: ");
         m("Motor: ", "Engine: ");
         m("GPU (forzada)", "GPU (forced)");
 
-        // ---------------- notificación del servicio ----------------
+        
         m("Preparando versiones", "Preparing versions");
         m("Se muestra mientras se calculan los ajustes por detrás", "Shown while presets are computed in the background");
         m("Preparando los ajustes de la canción…", "Preparing the song's presets…");
 
-        // ---------------- nombres de los ajustes (Presets.NOMBRES) ----------------
+        
         m("Radiante", "Radiant");
         m("Deslumbrante", "Dazzling");
         m("Firme", "Firm");
@@ -158,13 +151,13 @@ public final class Idioma {
         m("Retro", "Retro");
         m("Audiolibro", "Audiobook");
         m("Podcast", "Podcast");
-        // al revés, para reconocer un texto ya pintado en inglés
+        
         for (String clave : MAPA.keySet()) {
             INVERSA.put(MAPA.get(clave), clave);
         }
     }
 
-    /** Lee el idioma guardado; la primera vez lo deduce del idioma del sistema. */
+    
     public static void iniciar(Context c) {
         if (c == null) {
             return;
@@ -172,9 +165,9 @@ public final class Idioma {
         try {
             SharedPreferences preferencias = c.getSharedPreferences(PREFS, 0);
             String guardado = preferencias.getString(CLAVE, null);
-            // El idioma del sistema se mira SOLO la primera vez (no hay nada guardado):
-            // a partir de ahí manda lo guardado, sea lo detectado o lo que elija el
-            // usuario con las banderas.
+            
+            
+            
             if (guardado == null || guardado.length() == 0) {
                 guardado = Locale.getDefault().getLanguage().toLowerCase(Locale.US).startsWith(ES) ? ES : EN;
                 preferencias.edit().putString(CLAVE, guardado).apply();
@@ -199,13 +192,13 @@ public final class Idioma {
             return;
         }
         try {
-            // se guarda la elección: a partir de aquí manda esto
+            
             c.getSharedPreferences(PREFS, 0).edit().putString(CLAVE, actual).apply();
         } catch (Throwable unused) {
         }
     }
 
-    /** Devuelve el texto español tal cual si estamos en español; si no, su traducción. */
+    
     public static String t(String es) {
         if (es == null || !EN.equals(actual)) {
             return es;

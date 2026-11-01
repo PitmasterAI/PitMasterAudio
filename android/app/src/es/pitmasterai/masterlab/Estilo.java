@@ -6,7 +6,6 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-/* loaded from: classes.dex */
 public final class Estilo {
     public static final int BORDE = -14013894;
     public static final int CIAN = -14494738;

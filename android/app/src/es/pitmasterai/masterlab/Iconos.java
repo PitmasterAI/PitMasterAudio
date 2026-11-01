@@ -10,7 +10,6 @@ import android.graphics.RectF;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.BitmapDrawable;
 
-/* loaded from: classes.dex */
 public final class Iconos {
     private static int dp(Context context, float f) {
         return (int) (f * context.getResources().getDisplayMetrics().density);

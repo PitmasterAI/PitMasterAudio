@@ -2,7 +2,6 @@ package es.pitmasterai.masterlab.motor;
 
 import es.pitmasterai.masterlab.Acelerador;
 
-/* loaded from: classes.dex */
 public final class Copia {
     public static int tramas(float[][] fArr) {
         return fArr[0].length;

@@ -1,9 +1,5 @@
-; ---------------------------------------------------------------------------
-;  PitMasterAudio 1.0 - Instalador Windows (NSIS 3 / Unicode)
-;  Empaqueta el arbol portatil ya construido por build_windows.py
-;  Instalacion POR USUARIO (sin UAC) en %LOCALAPPDATA%\Programs\PitMasterAudio
-;  para que la carpeta "datos" quede escribible junto a la app.
-; ---------------------------------------------------------------------------
+
+
 Unicode true
 SetCompressor /SOLID lzma
 SetCompressorDictSize 64
@@ -39,7 +35,6 @@ VIAddVersionKey "FileDescription" "Instalador de ${APPNAME}"
 VIAddVersionKey "LegalCopyright"  "(c) 2026 ${PUBLISHER}"
 VIAddVersionKey "Comments"        "Masterizador de audio local: panel Flask + motor DSP"
 
-; ------------------------------- Interfaz MUI -------------------------------
 !define MUI_ICON   "${ICONFILE}"
 !define MUI_UNICON "${ICONFILE}"
 !define MUI_ABORTWARNING
@@ -64,24 +59,18 @@ VIAddVersionKey "Comments"        "Masterizador de audio local: panel Flask + mo
 
 !insertmacro MUI_LANGUAGE "Spanish"
 
-; ------------------------------- Instalacion -------------------------------
 Section "PitMasterAudio (obligatorio)" SEC_MAIN
   SectionIn RO
   SetShellVarContext current
 
-  ; Si ya hay una version instalada, se reemplaza el programa pero se
-  ; respeta la carpeta datos del usuario (File /r solo sobrescribe lo suyo).
   SetOutPath "$INSTDIR"
   File /r "${SRCDIR}\*.*"
 
-  ; Icono propio (para accesos directos y para Agregar o quitar programas)
   SetOutPath "$INSTDIR"
   File "${ICONFILE}"
 
-  ; Desinstalador
   WriteUninstaller "$INSTDIR\Desinstalar.exe"
 
-  ; Registro: Agregar o quitar programas (por usuario, HKCU)
   WriteRegStr   HKCU "${UNINSTKEY}" "DisplayName"     "${APPNAME} ${APPVERSION}"
   WriteRegStr   HKCU "${UNINSTKEY}" "DisplayVersion"  "${APPVERSION}"
   WriteRegStr   HKCU "${UNINSTKEY}" "Publisher"       "${PUBLISHER}"
@@ -94,7 +83,6 @@ Section "PitMasterAudio (obligatorio)" SEC_MAIN
   WriteRegDWORD HKCU "${UNINSTKEY}" "NoRepair" 1
   WriteRegDWORD HKCU "${UNINSTKEY}" "EstimatedSize" ${APPSIZE_KB}
 
-  ; Menu Inicio
   CreateDirectory "$SMPROGRAMS\${APPNAME}"
   CreateShortcut  "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\PitMasterAudio.exe" "" "$INSTDIR\PitMasterAudio.ico" 0
   CreateShortcut  "$SMPROGRAMS\${APPNAME}\Leeme.lnk" "$INSTDIR\LEEME.txt"
@@ -106,14 +94,13 @@ Section "Acceso directo en el escritorio" SEC_DESKTOP
   CreateShortcut "$DESKTOP\${APPNAME}.lnk" "$INSTDIR\PitMasterAudio.exe" "" "$INSTDIR\PitMasterAudio.ico" 0
 SectionEnd
 
-; --------------------------------- Funciones -------------------------------
 Function LaunchApp
-  ; .vbs no se puede lanzar con CreateProcess: hay que usar ShellExecute
+
   ExecShell "open" "$INSTDIR\PitMasterAudio.exe"
 FunctionEnd
 
 Function .onInit
-  ; Aviso si ya esta instalado en otra ruta
+
   ReadRegStr $0 HKCU "${UNINSTKEY}" "InstallLocation"
   ${If} $0 != ""
   ${AndIf} $0 != "$INSTDIR"
@@ -124,7 +111,6 @@ Function .onInit
   ${EndIf}
 FunctionEnd
 
-; -------------------------------- Desinstalar -------------------------------
 Section "Uninstall"
   SetShellVarContext current
 
@@ -135,13 +121,11 @@ Section "Uninstall"
   RMDir  "$SMPROGRAMS\${APPNAME}"
   DeleteRegKey HKCU "${UNINSTKEY}"
 
-  ; ¿Conservar los audios/proyectos del usuario?
   IfFileExists "$INSTDIR\datos\*.*" 0 uninst_all
     MessageBox MB_YESNO|MB_DEFBUTTON1|MB_ICONQUESTION \
       "¿Quieres borrar tambien tus audios y proyectos guardados en:$\r$\n$INSTDIR\datos?$\r$\n$\r$\nSi respondes No, se conservaran." \
       IDYES uninst_all
 
-    ; --- Conservar datos: borrar solo lo que instalo el instalador ---
     RMDir /r "$INSTDIR\app"
     RMDir /r "$INSTDIR\python"
     RMDir /r "$INSTDIR\vk"
@@ -152,7 +136,7 @@ Section "Uninstall"
     Delete "$INSTDIR\*.vbs"
     Delete "$INSTDIR\*.ico"
     Delete "$INSTDIR\Desinstalar.exe"
-    RMDir  "$INSTDIR"       ; solo se borra si ha quedado vacia (datos la mantiene)
+    RMDir  "$INSTDIR"
     Goto uninst_done
 
   uninst_all:

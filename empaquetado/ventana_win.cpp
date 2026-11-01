@@ -1,12 +1,5 @@
-/* Ventana propia de PitMasterAudio para Windows: WebView2 embebido.
- *
- * Igual que la ventana del AppImage (GTK+WebKit): una ventana de la aplicacion con el
- * panel dentro, sin navegador y sin barras. Usa el motor WebView2 (Edge incrustado),
- * que viene con Windows 10/11.
- *
- * Uso:  ventana.exe <url> [--datos CARPETA]
- * Si no hay WebView2 responde con codigo 2 para que el lanzador haga su plan B.
- */
+
+
 #define _UNICODE
 #include <windows.h>
 #include <objbase.h>
@@ -15,7 +8,6 @@
 
 static ICoreWebView2Controller *g_control = nullptr;
 
-/* mingw no resuelve __uuidof sobre interfaces MIDL: los IID van a mano */
 static const GUID IID_Entorno =
     {0x4e8a3389, 0xc9d8, 0x4bd2, {0xb6, 0xb5, 0x12, 0x4f, 0xee, 0x6c, 0xc1, 0x4d}};
 static const GUID IID_Control =
@@ -34,8 +26,6 @@ static void ajustar(void)
     g_control->put_Bounds(r);
 }
 
-/* Un enlace con target=_blank (el boton de Donar, la web…) se abre en el navegador
- * del sistema: dentro de esta ventana no hay pestanas y WebView2 lo dejaria en nada. */
 class ManoVentanaNueva : public ICoreWebView2NewWindowRequestedEventHandler {
     ULONG ref = 1;
 public:
@@ -71,7 +61,6 @@ public:
     }
 };
 
-/* ---- manejadores COM sin WRL (minGW no trae wrl/client.h) ------------------ */
 class ManoEntorno : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler {
     ULONG ref = 1;
 public:
@@ -140,14 +129,13 @@ HRESULT STDMETHODCALLTYPE ManoEntorno::Invoke(HRESULT resultado,
                                               ICoreWebView2Environment *entorno)
 {
     if (FAILED(resultado) || !entorno) {
-        PostQuitMessage(2);        /* sin WebView2: el lanzador decide */
+        PostQuitMessage(2);        
         return S_OK;
     }
     entorno->CreateCoreWebView2Controller(g_ventana, new ManoControl());
     return S_OK;
 }
 
-/* ---- ventana --------------------------------------------------------------- */
 static LRESULT CALLBACK Procedimiento(HWND v, UINT m, WPARAM w, LPARAM l)
 {
     switch (m) {
@@ -190,7 +178,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR linea, int mostrar)
                                 1180, 900, nullptr, nullptr, inst, nullptr);
     if (!g_ventana) return 4;
 
-    /* WebView2Loader.dll junto al programa */
+    
     HMODULE cargador = LoadLibraryW(L"WebView2Loader.dll");
     if (!cargador) return 2;
     typedef HRESULT (STDAPICALLTYPE *Crear)(PCWSTR, PCWSTR,

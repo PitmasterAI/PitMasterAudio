@@ -1,12 +1,3 @@
-"""Capa de GPU del motor: Vulkan primero, torch/CUDA después, CPU si no hay nada.
-
-Vulkan es el camino que vale en todas partes (AMD, Intel, NVIDIA, Android): no
-necesita CUDA ni drivers propietarios. Si el aparato no tiene driver Vulkan se
-intenta torch con CUDA, y si tampoco hay, cada función devuelve None y el motor
-sigue en numpy.
-
-Todas las operaciones avisan de lo mismo: devuelven None cuando no se puede.
-"""
 import os
 import threading
 
@@ -14,40 +5,26 @@ import numpy as np
 
 try:
     import vk_compute
-except Exception:                     # sin módulo Vulkan
+except Exception:
     vk_compute = None
 
 _torch = None
 _torch_probado = False
 _local = threading.local()
 
-
 _MODO_GLOBAL = [None]
 
-
 def fijar(modo):
-    """Fija el motor del trabajo en curso: 'GPU', 'CPU' o None.
-
-    Se guarda además como valor POR DEFECTO del proceso. La cadena reparte el trabajo
-    en hilos (`motor.troceado`, `motor._troceado_con_env`) y esos hilos nacen sin
-    modo; antes se iban al motor de GPU aunque el trabajo fuera el de CPU y, como el
-    envoltorio Vulkan tiene un cerrojo único, se quedaban esperando turno uno detrás
-    de otro: el ajuste pasaba de 8 s a 26-30 s en el panel del usuario.
-    """
     _local.modo = modo
     if modo is not None:
         _MODO_GLOBAL[0] = modo
-
 
 def modo_hilo():
     local = getattr(_local, 'modo', None)
     return local if local is not None else _MODO_GLOBAL[0]
 
-
 def en_cpu():
-    """True cuando este hilo tiene que ir en CPU a propósito."""
     return modo_hilo() == 'CPU'
-
 
 def _torch_cuda():
     global _torch, _torch_probado
@@ -60,17 +37,14 @@ def _torch_cuda():
             _torch = None
     return _torch
 
-
 def _vk():
     if vk_compute is None:
         return None
     v = vk_compute.motor()
     return v if (v is not None and v.listo) else None
 
-
 def listo():
     return _vk() is not None or _torch_cuda() is not None
-
 
 def describe():
     v = _vk()
@@ -81,7 +55,6 @@ def describe():
         return 'CUDA · ' + t.cuda.get_device_name(0)
     return 'sin GPU'
 
-
 def backend():
     if _vk() is not None:
         return 'VULKAN'
@@ -89,10 +62,7 @@ def backend():
         return 'CUDA'
     return 'CPU'
 
-
-# ------------------------------------------------------------------ operaciones
 def escalar(x, g):
-    """x * g sobre toda la señal."""
     if en_cpu():
         return None
 
@@ -111,9 +81,7 @@ def escalar(x, g):
             pass
     return None
 
-
 def mul_por_vector(x, gan, canales=None):
-    """x * gan[trama]: una ganancia distinta por muestra."""
     if en_cpu():
         return None
 
@@ -137,9 +105,7 @@ def mul_por_vector(x, gan, canales=None):
             pass
     return None
 
-
 def estereo_ms(x, gm, gl):
-    """Matriz medio/lado con sus ganancias (necesita dos canales)."""
     if en_cpu():
         return None
 
@@ -161,9 +127,7 @@ def estereo_ms(x, gm, gl):
             pass
     return None
 
-
 def saturar(x, k):
-    """tanh(x * k); los armónicos pares y el filtro de tono se quedan en la CPU."""
     if en_cpu():
         return None
 
@@ -182,9 +146,7 @@ def saturar(x, k):
             pass
     return None
 
-
 def pico_real(x, taps, desfases):
-    """Envolvente de pico real por fases polifásicas, muestra a muestra."""
     if en_cpu():
         return None
 
@@ -195,7 +157,6 @@ def pico_real(x, taps, desfases):
         except Exception:
             pass
     return None
-
 
 if __name__ == '__main__':
     print('backend:', backend(), '·', describe())

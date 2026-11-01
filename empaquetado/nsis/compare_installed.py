@@ -5,7 +5,6 @@ import sys
 inst, src = sys.argv[1], sys.argv[2]
 IGNORE = {"pitmasteraudio.ico", "Desinstalar.exe", "datos"}
 
-
 def walk(root):
     out = {}
     for dp, dns, fns in os.walk(root):
@@ -20,14 +19,12 @@ def walk(root):
             out[rel] = p
     return out
 
-
 def md5(p):
     h = hashlib.md5()
     with open(p, "rb") as f:
         for b in iter(lambda: f.read(1 << 20), b""):
             h.update(b)
     return h.hexdigest()
-
 
 S, I = walk(src), walk(inst)
 print("arbol origen   :", len(S))

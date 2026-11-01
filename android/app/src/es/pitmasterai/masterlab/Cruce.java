@@ -4,11 +4,6 @@ import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Looper;
 
-/**
- * Cruce corto entre dos versiones del mismo audio: la nueva entra subiendo su volumen
- * mientras la anterior baja y se para. Sin este cruce se oía un corte al cambiar de
- * ajuste o al llegar la versión masterizada.
- */
 final class Cruce implements Runnable {
     private static final int PASOS = 4;
     private static final long MS_PASO = 20L;
@@ -32,7 +27,7 @@ final class Cruce implements Runnable {
         this.soltarAnterior = soltarAnterior;
     }
 
-    @Override // java.lang.Runnable
+    @Override 
     public void run() {
         float f = Math.min(1.0f, (this.paso + 1) / (float) PASOS);
         try {

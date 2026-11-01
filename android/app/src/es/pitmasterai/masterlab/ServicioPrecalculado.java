@@ -9,20 +9,19 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 
-/* loaded from: classes.dex */
 public class ServicioPrecalculado extends Service {
     public static final String CANAL = "precalculado";
     private static final int ID_AVISO = 42;
 
-    @Override // android.app.Service
+    @Override 
     public IBinder onBind(Intent intent) {
         return null;
     }
 
-    @Override // android.app.Service
+    @Override 
     public void onCreate() {
         super.onCreate();
-        Idioma.iniciar(this);       // el aviso sale en el idioma elegido en la app
+        Idioma.iniciar(this);       
         NotificationManager notificationManager = (NotificationManager) getSystemService(NotificationManager.class);
         if (notificationManager != null) {
             NotificationChannel notificationChannel = new NotificationChannel(CANAL, Idioma.t("Preparando versiones"), 2);
@@ -31,7 +30,7 @@ public class ServicioPrecalculado extends Service {
         }
     }
 
-    @Override // android.app.Service
+    @Override 
     public int onStartCommand(Intent intent, int i, int i2) {
         Notification.Builder builder;
         Idioma.iniciar(this);
@@ -45,7 +44,7 @@ public class ServicioPrecalculado extends Service {
         return 2;
     }
 
-    @Override // android.app.Service
+    @Override 
     public void onDestroy() {
         stopForeground(true);
         super.onDestroy();

@@ -1,12 +1,11 @@
 package es.pitmasterai.masterlab.motor;
 
-/* loaded from: classes.dex */
 public final class Analizador {
     private static double acotar(double d, double d2, double d3) {
         return d < d2 ? d2 : d > d3 ? d3 : d;
     }
 
-    /* loaded from: classes.dex */
+    
     public static final class Perfil {
         public final double agudosDb;
         public final double correlacion;

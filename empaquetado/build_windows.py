@@ -1,10 +1,4 @@
-#!/usr/bin/env python3
-"""Assembles PitMasterAudio for Windows: portable, nothing to install.
 
-Python embebido + wheels (win_amd64) + el panel con la misma interfaz que la APK.
-Al hacer doble clic abre una ventana propia (Edge en modo aplicacion) y al cerrarla
-se para el servidor.
-"""
 import glob
 import os
 import shutil
@@ -18,7 +12,7 @@ SRC = os.path.expanduser('~/PitmasterAudio')
 W = os.path.join(BASE, 'PitMasterAudio-Windows')
 ZIP = os.path.join(DIST, 'PitMasterAudio-1.0-Windows-portable.zip')
 PY_URL = 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip'
-# sounddevice trae portaudio dentro: el panel saca el sonido él mismo (sin navegador)
+
 PAQUETES = ['numpy', 'scipy', 'soundfile', 'flask', 'pyloudnorm', 'cffi', 'pycparser', 'sounddevice']
 
 LANZAR_VBS = r'''Set fso = CreateObject("Scripting.FileSystemObject")
@@ -109,13 +103,11 @@ NOTAS
 · Para exportar MP3 hace falta ffmpeg.exe en esta carpeta; sin él se guarda WAV.
 '''
 
-
 def bajar(url, destino):
     if not os.path.exists(destino):
         print('descargando', url.split('/')[-1], flush=True)
         urllib.request.urlretrieve(url, destino)
     return destino
-
 
 def main():
     os.makedirs(BASE, exist_ok=True)
@@ -123,12 +115,10 @@ def main():
         shutil.rmtree(W)
     os.makedirs(os.path.join(W, 'python'), exist_ok=True)
 
-    # 1. python embebido
     py_zip = bajar(PY_URL, os.path.join(BASE, 'python-embed.zip'))
     with zipfile.ZipFile(py_zip) as z:
         z.extractall(os.path.join(W, 'python'))
 
-    # 2. wheels de Windows
     wheels = os.path.join(BASE, 'wheels')
     os.makedirs(wheels, exist_ok=True)
     if not glob.glob(os.path.join(wheels, 'numpy*.whl')):
@@ -138,19 +128,17 @@ def main():
                         '--implementation', 'cp', '--abi', 'cp311'] + PAQUETES, check=True)
     lib = os.path.join(W, 'python', 'Lib', 'site-packages')
     os.makedirs(lib, exist_ok=True)
-    # El Python embebido de Windows solo mira lo que diga su ._pth: sin esto no
-    # encuentra flask ni numpy (la app no arrancaba en Windows).
+
     with open(os.path.join(W, 'python', 'python311._pth'), 'w', newline='\r\n') as f:
         f.write('python311.zip\n.\nLib\\site-packages\nimport site\n')
     for whl in glob.glob(os.path.join(wheels, '*.whl')):
         with zipfile.ZipFile(whl) as z:
             z.extractall(lib)
 
-    # 3. el panel y el motor, con la misma interfaz
     destino_app = os.path.join(W, 'app')
     shutil.copytree(os.path.join(SRC, 'app'), destino_app,
                     ignore=shutil.ignore_patterns('__pycache__', 'data', '*.wav', '*.mp3'))
-    # solo los módulos del motor: lo demás son herramientas de medición
+
     for fichero in ('motor.py', 'dsp.py', 'aceleracion.py', 'gpuops.py', 'vk_compute.py',
                     'paralelo.py', 'ventana.py', 'presets.json'):
         ruta = os.path.join(SRC, fichero)
@@ -159,17 +147,14 @@ def main():
     if os.path.isdir(os.path.join(SRC, 'vk')):
         shutil.copytree(os.path.join(SRC, 'vk'), os.path.join(W, 'vk'))
 
-    # 4. lanzadores y léeme
     with open(os.path.join(W, 'PitMasterAudio.vbs'), 'w', newline='\r\n') as f:
         f.write(LANZAR_VBS)
-    # lanzador nativo: arranca el panel, abre la ventana y al cerrarla para todo
-    # ventana propia (WebView2): el mismo tipo de ventana que la del AppImage
+
     ventana_cpp = os.path.join(DIST, 'ventana_win.cpp')
     sdk_webview = os.path.expanduser('~/webview2-sdk')
     if (os.path.exists(ventana_cpp) and os.path.isdir(sdk_webview)
             and shutil.which('x86_64-w64-mingw32-g++')):
-        # -static: sin libstdc++/libgcc al lado, o Windows no arranca ("no se encontró
-        # libstdc++-6.dll"). Solo debe depender de las DLL del sistema.
+
         subprocess.run(['x86_64-w64-mingw32-g++', '-municode', '-mwindows', '-O2', '-std=c++17',
                         '-static', '-static-libgcc', '-static-libstdc++',
                         '-I', os.path.join(DIST, 'mingw-include'),
@@ -192,11 +177,9 @@ def main():
     with open(os.path.join(W, 'LEEME.txt'), 'w', encoding='utf-8') as f:
         f.write(LEEME)
 
-    # 5. paquete
     print('comprimiendo', flush=True)
     subprocess.run(['zip', '-qr9', ZIP, os.path.basename(W)], cwd=BASE, check=True)
     print('OK ->', ZIP, round(os.path.getsize(ZIP) / 1e6, 1), 'MB')
-
 
 if __name__ == '__main__':
     main()

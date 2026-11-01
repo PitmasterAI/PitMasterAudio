@@ -35,7 +35,6 @@ print("\n=== CADENAS UTF-16 ===")
 for s in ("PitMasterAudio 5.19.1", "PitMasterAudio", "5.19.1", "PitmasterAI"):
     print("  %-26s %s" % (s, s.encode("utf-16-le") in d))
 
-
 def walk(root, skip):
     out = {}
     for dp, dns, fns in os.walk(root):
@@ -49,14 +48,12 @@ def walk(root, skip):
             out[rel] = p
     return out
 
-
 def md5(p):
     h = hashlib.md5()
     with open(p, "rb") as f:
         for b in iter(lambda: f.read(1 << 20), b""):
             h.update(b)
     return h.hexdigest()
-
 
 S = walk(src, set())
 E = walk(ext, {"$PLUGINSDIR"})

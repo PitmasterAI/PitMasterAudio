@@ -1,6 +1,5 @@
 package es.pitmasterai.masterlab.motor;
 
-/** Filtros biquad RBJ y utilidades de filtrado (buffers planares x[canal][muestra]). */
 public final class Biquad {
 
     public static final int PICO = 0;
@@ -15,7 +14,7 @@ public final class Biquad {
         this.b0 = b0; this.b1 = b1; this.b2 = b2; this.a1 = a1; this.a2 = a2;
     }
 
-    /** Coeficientes RBJ normalizados por a0. */
+    
     public static Biquad disenar(int tipo, double sr, double f0, double gananciaDb, double q) {
         double A = Math.pow(10, gananciaDb / 40.0);
         double w0 = 2 * Math.PI * f0 / sr;
@@ -58,7 +57,7 @@ public final class Biquad {
         return new Biquad(b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0);
     }
 
-    /** Respuesta en dB a la frecuencia f. */
+    
     public double respuestaDb(double f, double sr) {
         double w = 2 * Math.PI * f / sr;
         double cw = Math.cos(w), sw = Math.sin(w);
@@ -71,12 +70,9 @@ public final class Biquad {
         return 20 * Math.log10(Math.max(mag, 1e-12));
     }
 
-    /** Aplica el filtro en sitio a todas las muestras (una pasada por canal). */
-    /**
-     * Aplica el filtro canal a canal. En canciones largas cada canal va en su
-     * propio hilo (los canales son independientes), que es la mejora real de
-     * rendimiento en un móvil; el resultado es idéntico al de una sola hebra.
-     */
+    
+    
+
     public void aplicar(float[][] x, boolean haciaAtras) {
         int nucleos = Runtime.getRuntime().availableProcessors();
         if (x.length >= 2 && x[0].length >= 200000 && nucleos > 1) {
@@ -95,7 +91,7 @@ public final class Biquad {
         for (int c = 0; c < x.length; c++) procesar(x[c], haciaAtras);
     }
 
-    /** Trabaja los canales del 1 en adelante mientras el hilo principal hace el 0. */
+    
     private static class Obrero implements Runnable {
         private final Biquad filtro;
         private final float[][] x;
@@ -112,7 +108,7 @@ public final class Biquad {
             try {
                 for (int c = 1; c < x.length; c++) filtro.procesar(x[c], haciaAtras);
             } catch (RuntimeException e) {
-                fallo = e;                 // se vuelve a lanzar en el hilo principal
+                fallo = e;                 
             }
         }
 
@@ -137,13 +133,13 @@ public final class Biquad {
         }
     }
 
-    /** Filtrado de fase cero (adelante y atrás). */
+    
     public static void aplicarFaseCero(float[][] x, Biquad... etapas) {
         for (Biquad b : etapas) b.aplicar(x, false);
         for (int i = etapas.length - 1; i >= 0; i--) etapas[i].aplicar(x, true);
     }
 
-    /** Crossover Linkwitz-Riley 4 de fase cero sobre una copia. */
+    
     public static float[][] pasoBajoFaseCero(float[][] x, double sr, double f) {
         float[][] copia = Copia.de(x);
         double q = 1.0 / Math.sqrt(2.0);

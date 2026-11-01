@@ -1,13 +1,4 @@
-#!/usr/bin/env python3
-"""Hace el .exe portatil: un solo fichero que se abre sin instalar nada.
 
-Se apoya en el paquete de Windows ya preparado (build_windows.py) y lo mete en un
-autoextraible de NSIS que NO instala: la primera vez se descomprime en
-%LOCALAPPDATA%\\PitMasterAudio-<version> y las siguientes arranca directamente de ahi.
-Sin registro, sin desinstalador, sin permisos de administrador.
-
-Uso:  python3 build_portable.py
-"""
 import os
 import subprocess
 import time
@@ -62,12 +53,11 @@ Section "Abrir"
 SectionEnd
 '''
 
-
 def main():
     if not os.path.isdir(PAYLOAD):
         raise SystemExit('falta el paquete de Windows: ejecuta antes build_windows.py')
     os.makedirs(os.path.dirname(NSI), exist_ok=True)
-    # sello de construcción: va dentro del paquete y decide si hay que reextraer
+
     sello = time.strftime('%Y%m%d-%H%M%S')
     with open(os.path.join(PAYLOAD, 'CONSTRUCCION.txt'), 'w') as f:
         f.write(sello)
@@ -88,7 +78,6 @@ def main():
         print((r.stderr or '')[-1500:])
         raise SystemExit('fallo makensis')
     print('OK -> %s (%.0f MB)' % (SALIDA, os.path.getsize(SALIDA) / 1e6))
-
 
 if __name__ == '__main__':
     main()

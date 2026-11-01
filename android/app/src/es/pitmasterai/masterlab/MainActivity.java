@@ -52,7 +52,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/* loaded from: classes.dex */
 public class MainActivity extends Activity implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, OndaSonido.AlTocar {
     private static final long LIBRE_MINIMO_SISTEMA = 1073741824;
     private static final int ID_BOTON_ES = 20;
@@ -86,8 +85,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
     private TextView etiquetaMotor;
     private Button botonEs;
     private Button botonEn;
-    private int pistaIndice = -1;        // ajuste recomendado que se está enseñando
-    private int estadoIndice = -1;       // ajuste que se está aplicando (-1 = sin datos)
+    private int pistaIndice = -1;        
+    private int estadoIndice = -1;       
     private File ficheroMaster;
     private File ficheroOriginal;
     private ProgressBar giroIntensidad;
@@ -149,17 +148,17 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
     private final HashMap<Button, AnimationDrawable> giros = new HashMap<>();
     private final Latido latido = new Latido(this);
 
-    @Override // android.widget.SeekBar.OnSeekBarChangeListener
+    @Override 
     public void onStartTrackingTouch(SeekBar seekBar) {
     }
 
-    static /* synthetic */ int access$104(MainActivity mainActivity) {
+    static  int access$104(MainActivity mainActivity) {
         int i = mainActivity.ticks + 1;
         mainActivity.ticks = i;
         return i;
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public int[] dosRecomendadas(int[] iArr) {
         boolean z;
         int[] iArr2 = new int[2];
@@ -196,7 +195,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         this.hilo.postDelayed(this.aplicarLufs, 700L);
     }
 
-    /* loaded from: classes.dex */
+    
     private static class Latido implements Runnable {
         private final MainActivity a;
 
@@ -204,7 +203,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.a = mainActivity;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             this.a.actualizarProgreso();
             if (MainActivity.access$104(this.a) % 15 == 0) {
@@ -214,7 +213,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public static Wav.Datos unir(Wav.Datos[] datosArr) {
         int length = datosArr[0].muestras.length;
         int i = datosArr[0].frecuencia;
@@ -234,7 +233,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         return new Wav.Datos(fArr, i);
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public static double[] masterizarPorTrozos(MainActivity mainActivity, Preset preset, float f, Double d, File file) throws Exception {
         Wav.Escritor escritor;
         double d2 = mainActivity.duracionEntrada;
@@ -314,8 +313,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         return 0;
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class TareaAnalizar implements Runnable {
         private final MainActivity a;
         final int generacion;
@@ -327,7 +326,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.uri = uri;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             try {
                 Registro.escribir("Análisis: mirando el archivo");
@@ -377,8 +376,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class TareaMasterizar implements Runnable {
         private final MainActivity a;
         private final File destino;
@@ -396,7 +395,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.turno = i2;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             float[][] masterizar;
             Acelerador.fijarMotorHilo(Acelerador.motorRapido(this.a));
@@ -486,8 +485,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class TrabajoPrecalculado implements Runnable {
         private final MainActivity a;
         private final int indice;
@@ -505,45 +504,27 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.principal = z;
         }
 
-        /* JADX WARN: Code restructure failed: missing block: B:13:0x00f2, code lost:
         
-            if (r20.principal != false) goto L29;
-         */
-        /* JADX WARN: Code restructure failed: missing block: B:14:0x016d, code lost:
+
         
-            r20.a.trabajandoSecundario = false;
-         */
-        /* JADX WARN: Code restructure failed: missing block: B:15:0x0172, code lost:
+
         
-            es.pitmasterai.masterlab.motor.Trabajo.soltar();
-            es.pitmasterai.masterlab.Acelerador.limpiarMotorHilo();
-         */
-        /* JADX WARN: Code restructure failed: missing block: B:16:0x01c5, code lost:
+
         
-            return;
-         */
-        /* JADX WARN: Code restructure failed: missing block: B:19:0x0167, code lost:
+
         
-            r20.a.trabajandoPrincipal = false;
-         */
-        /* JADX WARN: Code restructure failed: missing block: B:25:0x0165, code lost:
+
         
-            if (r20.principal == false) goto L30;
-         */
-        /* JADX WARN: Code restructure failed: missing block: B:43:0x01c2, code lost:
+
         
-            if (r20.principal == false) goto L30;
-         */
-        /* JADX WARN: Code restructure failed: missing block: B:49:0x013e, code lost:
+
         
-            if (r20.principal == false) goto L30;
-         */
-        /* JADX WARN: Removed duplicated region for block: B:34:0x01ec  */
-        /* JADX WARN: Removed duplicated region for block: B:37:0x01f2  */
-        @Override // java.lang.Runnable
-        /*
-            Code decompiled incorrectly, please refer to instructions dump.
-        */
+
+        
+        
+        @Override 
+        
+
         public void run() {
             Acelerador.fijarMotorHilo(this.motor);
             Trabajo.marcarTipo(this.principal ? Trabajo.PRINCIPAL : Trabajo.SECUNDARIO);
@@ -598,8 +579,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class OndaDesdeFichero implements Runnable {
         private final MainActivity a;
         private final File fichero;
@@ -613,7 +594,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.medir = z;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             double d;
             double d2;
@@ -635,7 +616,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* loaded from: classes.dex */
+    
     private static class EntregaOnda implements Runnable {
         private final MainActivity a;
         private final int indice;
@@ -653,7 +634,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.indice = i;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             this.a.picosMaster = this.picos;
             this.a.pintarOndaDeLaVersion();
@@ -663,8 +644,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class ElegirOpcion implements View.OnClickListener {
         private final MainActivity a;
         private final int indice;
@@ -674,14 +655,14 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.indice = i;
         }
 
-        @Override // android.view.View.OnClickListener
+        @Override 
         public void onClick(View view) {
             this.a.masterizar(this.indice);
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class AplicarLufs implements Runnable {
         private final MainActivity a;
 
@@ -689,7 +670,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.a = mainActivity;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             if (this.a.datos == null || this.a.indiceActual < 0) {
                 return;
@@ -699,12 +680,12 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class VigilarBarraLufs implements SeekBar.OnSeekBarChangeListener {
         private final MainActivity a;
 
-        @Override // android.widget.SeekBar.OnSeekBarChangeListener
+        @Override 
         public void onStartTrackingTouch(SeekBar seekBar) {
         }
 
@@ -712,7 +693,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.a = mainActivity;
         }
 
-        @Override // android.widget.SeekBar.OnSeekBarChangeListener
+        @Override 
         public void onProgressChanged(SeekBar seekBar, int i, boolean z) {
             if (z) {
                 Double.isNaN(i);
@@ -722,7 +703,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             }
         }
 
-        @Override // android.widget.SeekBar.OnSeekBarChangeListener
+        @Override 
         public void onStopTrackingTouch(SeekBar seekBar) {
             if (this.a.indiceActual >= 0) {
                 this.a.hilo.removeCallbacks(this.a.aplicarLufs);
@@ -732,16 +713,16 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class VigilarIntensidad implements TextWatcher {
         private final MainActivity a;
 
-        @Override // android.text.TextWatcher
+        @Override 
         public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
         }
 
-        @Override // android.text.TextWatcher
+        @Override 
         public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
         }
 
@@ -749,7 +730,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.a = mainActivity;
         }
 
-        @Override // android.text.TextWatcher
+        @Override 
         public void afterTextChanged(Editable editable) {
             if (this.a.sincronizando) {
                 return;
@@ -766,16 +747,16 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class VigilarLufs implements TextWatcher {
         private final MainActivity a;
 
-        @Override // android.text.TextWatcher
+        @Override 
         public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
         }
 
-        @Override // android.text.TextWatcher
+        @Override 
         public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
         }
 
@@ -783,7 +764,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.a = mainActivity;
         }
 
-        @Override // android.text.TextWatcher
+        @Override 
         public void afterTextChanged(Editable editable) {
             if (this.a.sincronizando) {
                 return;
@@ -799,8 +780,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class Aviso implements Runnable {
         private final MainActivity a;
         private final String texto;
@@ -810,14 +791,14 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.texto = str;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             this.a.etiquetaEstado.setText(this.texto);
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class DesplegarAjustes implements View.OnClickListener {
         private final LinearLayout caja;
 
@@ -825,7 +806,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.caja = linearLayout;
         }
 
-        @Override // android.view.View.OnClickListener
+        @Override 
         public void onClick(View view) {
             boolean z = this.caja.getVisibility() == 0;
             this.caja.setVisibility(z ? 8 : 0);
@@ -833,8 +814,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class QuitarGiros implements Runnable {
         private final MainActivity a;
 
@@ -842,14 +823,14 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.a = mainActivity;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             this.a.ocultarGiros();
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class Fin implements Runnable {
         private final MainActivity a;
 
@@ -857,16 +838,16 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.a = mainActivity;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             this.a.progreso.setVisibility(8);
         }
     }
 
-    @Override // android.app.Activity
+    @Override 
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-        Idioma.iniciar(this);      // antes de construir nada, para pintar en el idioma guardado
+        Idioma.iniciar(this);      
         Registro.iniciar(this);
         Acelerador.aplicarForzado(this);
         setContentView(construirPantalla());
@@ -1124,7 +1105,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         return scrollView;
     }
 
-    /** Pinta las dos banderas: la del idioma activo en rosa, la otra oscura. */
+    
     private void pintarBanderas() {
         if (this.botonEs != null) {
             pintarBandera(this.botonEs, Idioma.ES.equals(Idioma.idioma()));
@@ -1141,7 +1122,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
                 : Estilo.redondeado(-14474438, Estilo.dp(this, 12.0f), Estilo.dp(this, 1.0f), Estilo.BORDE));
     }
 
-    /** Recorre la pantalla y cambia los textos fijos que sepa traducir. */
+    
     private void repintarTextos(View vista) {
         if (vista instanceof TextView) {
             TextView texto = (TextView) vista;
@@ -1168,11 +1149,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /**
-     * Cambia todos los textos al idioma elegido sin recrear la actividad.
-     * Recrearla paraba el audio (onDestroy suelta los reproductores), así que aquí
-     * solo se repinta lo que ya está en pantalla y el sonido no se toca.
-     */
+    
+
     private void aplicarIdioma() {
         if (this.raiz != null) {
             repintarTextos(this.raiz);
@@ -1225,7 +1203,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         Registro.escribir("Idioma: " + Idioma.idioma() + " (sin cortar la reproducción)");
     }
 
-    /** Botón de bandera del selector de idioma: el activo va en rosa con texto blanco. */
+    
     private Button botonIdioma(final String codigo, String bandera) {
         boolean activo = codigo.equals(Idioma.idioma());
         Button boton = new Button(this);
@@ -1249,7 +1227,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         return boton;
     }
 
-    /** Resumen del perfil (antes Analizador.resumen(), que estaba solo en español). */
+    
     private static String resumenPerfil(Analizador.Perfil perfil) {
         if (perfil == null) {
             return "";
@@ -1258,8 +1236,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
                 Double.valueOf(perfil.lufs), Double.valueOf(perfil.cresta), Double.valueOf(perfil.correlacion));
     }
 
-    // En horizontal, un cuarto de pantalla de margen a cada lado: el contenido
-    // queda centrado y los dos laterales iguales.
+    
+    
     private void aplicarMargenes() {
         if (this.raiz == null) {
             return;
@@ -1271,13 +1249,13 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         this.raiz.setPadding(lado, this.raiz.getPaddingTop(), lado, this.raiz.getPaddingBottom());
     }
 
-    @Override // android.app.Activity, android.content.ComponentCallbacks
+    @Override 
     public void onConfigurationChanged(Configuration configuration) {
         super.onConfigurationChanged(configuration);
         aplicarMargenes();
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public File ficheroCache(int i, float f, Double d) {
         String valueOf = String.valueOf(Math.round(f * 100.0f));
         String valueOf2 = d == null ? "auto" : String.valueOf(Math.round(d.doubleValue() * 10.0d));
@@ -1304,7 +1282,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public int indiceDe(String str) {
         for (int i = 0; i < Presets.CLAVES.length; i++) {
             if (Presets.CLAVES[i].equals(str)) {
@@ -1314,13 +1292,13 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         return 0;
     }
 
-    @Override // android.view.View.OnClickListener
+    @Override 
     public void onClick(View view) {
         int id = view.getId();
         if (id == ID_BOTON_ES || id == ID_BOTON_EN) {
             String elegido = id == ID_BOTON_ES ? Idioma.ES : Idioma.EN;
             if (!elegido.equals(Idioma.idioma())) {
-                // se repinta la pantalla SIN recrear la actividad: el audio sigue sonando
+                
                 Idioma.poner(this, elegido);
                 aplicarIdioma();
             }
@@ -1410,18 +1388,18 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    @Override // es.pitmasterai.masterlab.OndaSonido.AlTocar
+    @Override 
     public void alArrastrar(float f) {
         this.arrastrandoOnda = true;
     }
 
-    @Override // es.pitmasterai.masterlab.OndaSonido.AlTocar
+    @Override 
     public void alSoltar(float f) {
         this.arrastrandoOnda = false;
         alBuscar(f);
     }
 
-    @Override // es.pitmasterai.masterlab.OndaSonido.AlTocar
+    @Override 
     public void alBuscar(float f) {
         MediaPlayer mediaPlayer = this.viendoOriginal ? this.jugadorOriginal : this.jugadorMaster;
         if (mediaPlayer == null) {
@@ -1449,7 +1427,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    @Override // android.widget.SeekBar.OnSeekBarChangeListener
+    @Override 
     public void onProgressChanged(SeekBar seekBar, int i, boolean z) {
         EditText editText;
         this.etiquetaIntensidad.setText(Idioma.t("Intensidad del efecto: ") + i + " %");
@@ -1465,7 +1443,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         this.hilo.postDelayed(this.aplicarLufs, 500L);
     }
 
-    @Override // android.widget.SeekBar.OnSeekBarChangeListener
+    @Override 
     public void onStopTrackingTouch(SeekBar seekBar) {
         if (this.indiceActual >= 0) {
             this.hilo.removeCallbacks(this.aplicarLufs);
@@ -1473,7 +1451,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    @Override // android.app.Activity
+    @Override 
     protected void onActivityResult(int i, int i2, Intent intent) {
         if (i != PEDIR_ENTRADA) {
             if (i == PEDIR_SALIDA) {
@@ -1589,7 +1567,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         double d = crear.lufs;
         double max = Math.max(-1.5d, Math.min(1.5d, (this.perfil.cresta - 14.0d) * 0.3d));
         Double.isNaN(d);
-        // el usuario quiere 1,5 dB mas en todos los ajustes
+        
         double max2 = Math.max(-16.0d, Math.min(-6.0d, d + max + 1.5d));
         if (this.perfil.lufs > max2) {
             max2 = Math.min(this.perfil.lufs, -6.0d);
@@ -1680,7 +1658,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         Registro.escribir(String.format("Auto: %.1f LUFS y %d %% (ganancia prevista %.1f dB)", Double.valueOf(d2), Integer.valueOf(round2), Double.valueOf(d)));
         int i = this.indiceActual;
         if (i < 0) {
-            i = indiceDe("base_claro");        // todos empiezan en Claro
+            i = indiceDe("base_claro");        
         }
         masterizar(i, 0);
     }
@@ -1787,8 +1765,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class EntregaAnalisis implements Runnable {
         private final MainActivity a;
         private final Wav.Datos d;
@@ -1808,7 +1786,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.orden = iArr;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             if (this.generacion == this.a.generacionAnalisis) {
                 this.a.progreso.setVisibility(8);
@@ -1840,7 +1818,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
                 this.a.viendoOriginal = true;
                 this.a.marcarFuente();
                 this.a.pintarOndaDeLaVersion();
-                // en cuanto carga la canción empieza a sonar, marcando Original
+                
                 this.a.reproducir();
                 this.a.pintarOpciones();
                 this.a.etiquetaEstado.setText("");
@@ -1871,7 +1849,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public float[] picosDe(float[][] fArr) {
         if (fArr == null || fArr.length == 0) {
             return new float[0];
@@ -1897,7 +1875,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         return fArr2;
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public void pintarOndaDeLaVersion() {
         OndaSonido ondaSonido = this.onda;
         if (ondaSonido == null) {
@@ -1906,7 +1884,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         ondaSonido.setPicos(this.viendoOriginal ? this.picosOriginal : this.picosMaster);
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public float[] calcularPicos() {
         Wav.Datos datos = this.datos;
         if (datos == null) {
@@ -1941,7 +1919,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         return fArr;
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public void pintarOpciones() {
         LinearLayout linearLayout = this.cajaRecomendadaCompleta;
         if (linearLayout != null) {
@@ -2030,7 +2008,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         refrescarIconos();
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public void refrescarIconos() {
         if (this.botonesPreset.isEmpty()) {
             return;
@@ -2090,12 +2068,12 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public void actualizarMarcas() {
         refrescarIconos();
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public void marcarActivo(int i) {
         LinearLayout[] linearLayoutArr = {this.cajaDestacados, this.cajaRecomendadas, this.cajaVariaciones};
         for (int i2 = 0; i2 < 3; i2++) {
@@ -2125,7 +2103,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public void masterizar(int i) {
         masterizar(i, 0);
     }
@@ -2141,7 +2119,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public void ocultarGiros() {
         ProgressBar progressBar = this.giroIntensidad;
         if (progressBar != null) {
@@ -2153,31 +2131,30 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* JADX WARN: Removed duplicated region for block: B:27:0x00c2  */
-    /* JADX WARN: Removed duplicated region for block: B:29:0x00db  */
-    /* JADX WARN: Removed duplicated region for block: B:32:0x00e9  */
-    /* JADX WARN: Removed duplicated region for block: B:34:0x00f1  */
-    /* JADX WARN: Removed duplicated region for block: B:43:0x019a  */
-    /* JADX WARN: Removed duplicated region for block: B:45:0x00c9 A[EXC_TOP_SPLITTER, SYNTHETIC] */
-    /* JADX WARN: Removed duplicated region for block: B:49:0x00c5  */
-    /*
-        Code decompiled incorrectly, please refer to instructions dump.
-    */
-    /** Aplica un ajuste: si ya está calculado lo reproduce; si no, lo manda a calcular. */
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
     public void masterizar(int indice, int motivo) {
         if (this.datos == null) {
             return;
         }
         this.motivoUltimo = motivo;
         if (motivo == 1 || motivo == 2) {
-            this.hechos.clear();      // cambió la sonoridad o la intensidad a mano
+            this.hechos.clear();      
         }
         this.indiceSolicitado = indice;
         this.colaBloqueada = false;
         this.esperasMemoria = 0;
         this.cuarentena.clear();
-        Trabajo.cancelar();           // se corta solo el trabajo interactivo anterior
+        Trabajo.cancelar();           
 
         if (this.modoAuto || this.intensidadFija) {
             this.sincronizando = true;
@@ -2198,7 +2175,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         Double objetivo = objetivoManual();
         float intensidad = intensidadManual();
 
-        // de dónde viene la escucha, para seguir por el mismo punto
+        
         MediaPlayer activo = this.viendoOriginal ? this.jugadorOriginal : this.jugadorMaster;
         if (activo != null) {
             try {
@@ -2215,12 +2192,12 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
 
         File cache = ficheroCache(indice, intensidad, objetivo);
         if (!cache.exists()) {
-            mostrarGiro(motivo);      // el giro solo si de verdad hay que calcularlo
+            mostrarGiro(motivo);      
             girarEn(indice);
         }
 
         if (cache.exists()) {
-            // ya está calculado: se reproduce directamente del fichero
+            
             this.indiceActual = indice;
             this.ficheroMaster = cache;
             this.viendoOriginal = false;
@@ -2406,8 +2383,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         this.hilo.post(new SoltarPrecalculados(this));
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class SoltarPrecalculados implements Runnable {
         private final MainActivity a;
 
@@ -2415,7 +2392,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.a = mainActivity;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             ArrayList<String> arrayList;
             String absolutePath = this.a.ficheroMaster == null ? null : this.a.ficheroMaster.getAbsolutePath();
@@ -2451,8 +2428,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         this.hilo.post(new MarcarCalculando(this, i, z));
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class MarcarCalculando implements Runnable {
         private final MainActivity a;
         private final boolean activo;
@@ -2464,7 +2441,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.activo = z;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             if (this.activo) {
                 this.a.calculando.add(Integer.valueOf(this.indice));
@@ -2475,9 +2452,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-
-
-    /** Memoria disponible del aparato en bytes (MemAvailable), -1 si no se puede leer. */
+    
     long memoriaLibreSistema() {
         java.io.BufferedReader lector = null;
         try {
@@ -2512,8 +2487,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         return runtime.maxMemory() - (runtime.totalMemory() - runtime.freeMemory()) > 16777216;
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class RefrescarMarcas implements Runnable {
         private final MainActivity a;
 
@@ -2521,7 +2496,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.a = mainActivity;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             this.a.actualizarMarcas();
         }
@@ -2531,8 +2506,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         this.hilo.post(new EntregaMaster(this, fArr, i, file, d, d2));
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class EntregaMaster implements Runnable {
         private final MainActivity a;
         private final File fichero;
@@ -2550,7 +2525,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.tp = d2;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             this.a.progreso.setVisibility(8);
             MainActivity mainActivity = this.a;
@@ -2585,7 +2560,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.a.ocultarGiros();
             this.a.calculando.remove(Integer.valueOf(this.indice));
             this.a.pintarOndaDeLaVersion();
-            this.a.seguirEnCaliente(true);      // suena el ajuste en cuanto está listo
+            this.a.seguirEnCaliente(true);      
             this.a.hechos.add(Integer.valueOf(this.indice));
             this.a.calculando.remove(Integer.valueOf(this.indice));
             this.a.actualizarMarcas();
@@ -2629,7 +2604,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public void prepararJugador(boolean z) {
         MediaPlayer preparado;
         Uri uri;
@@ -2674,8 +2649,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             }
             return;
         }
-        // la versión que se está oyendo no se corta: entra la nueva por el mismo punto
-        // y la anterior se apaga en un cruce de 80 ms
+        
+        
         try {
             preparado.seekTo(i);
         } catch (Exception unused4) {
@@ -2688,7 +2663,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         Cruce.empezar(mediaPlayer, preparado, true);
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public int posicionActual() {
         MediaPlayer mediaPlayer = this.viendoOriginal ? this.jugadorOriginal : this.jugadorMaster;
         if (mediaPlayer != null) {
@@ -2718,19 +2693,16 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public void seguirEnCaliente() {
         seguirEnCaliente(this.motivoUltimo == 0);
     }
 
-    /* JADX WARN: Code restructure failed: missing block: B:26:0x0041, code lost:
     
-        if (r4.seguiaSonando != false) goto L19;
-     */
-    /*
-        Code decompiled incorrectly, please refer to instructions dump.
-    */
-    /** Pasa a la versión nueva sin cortar: sigue por el mismo punto y solo arranca si tocaba. */
+
+    
+
+    
     private void seguirEnCaliente(boolean forzar) {
         MediaPlayer activo = this.jugadorMaster;
         if (activo == null) {
@@ -2829,8 +2801,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         this.viendoOriginal = !z;
         pintarOndaDeLaVersion();
         if (z2 && mediaPlayer != null) {
-            // suena: la nueva versión entra por el mismo punto y la vieja se apaga
-            // con un cruce de 80 ms (antes se paraba y arrancaba: se oía el corte)
+            
+            
             try {
                 mediaPlayer2.seekTo(i);
             } catch (Exception e) {
@@ -2866,7 +2838,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         Registro.escribir(sb.toString());
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public void mostrarInfoOriginal() {
         if (this.perfil == null) {
             this.etiquetaSonando.setText(Idioma.t("Original"));
@@ -2902,7 +2874,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* loaded from: classes.dex */
+    
     private static class MedirPico implements Runnable {
         private final MainActivity a;
         private final Wav.Datos d;
@@ -2912,7 +2884,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.d = datos;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             try {
                 this.a.hilo.post(new PonerPico(this.a, Sonoridad.picoReal(this.d.muestras, this.d.frecuencia)));
@@ -2922,8 +2894,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    /* loaded from: classes.dex */
+    
+    
     public static class OcultarProgreso implements Runnable {
         private final MainActivity a;
 
@@ -2931,7 +2903,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.a = mainActivity;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             if (this.a.progreso != null) {
                 this.a.progreso.setVisibility(8);
@@ -2939,7 +2911,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* loaded from: classes.dex */
+    
     private static class PonerPico implements Runnable {
         private final MainActivity a;
         private final double tp;
@@ -2949,7 +2921,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             this.tp = d;
         }
 
-        @Override // java.lang.Runnable
+        @Override 
         public void run() {
             this.a.tpOriginal = this.tp;
             if (this.a.viendoOriginal) {
@@ -2958,7 +2930,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public void marcarFuente() {
         MediaPlayer mediaPlayer = null;
         MediaPlayer mediaPlayer2;
@@ -2989,7 +2961,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         this.botonMaster.setEnabled(this.ficheroMaster != null);
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public void actualizarProgreso() {
         MediaPlayer mediaPlayer = this.viendoOriginal ? this.jugadorOriginal : this.jugadorMaster;
         if (mediaPlayer == null) {
@@ -3003,7 +2975,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
             }
             this.posicionDeseada = currentPosition;
             if (duration > 0) {
-                // división en coma flotante: con enteros daba 0 y la onda no marcaba por dónde iba
+                
                 this.onda.setProgreso((float) currentPosition / (float) duration);
             }
             if (mediaPlayer.isPlaying()) {
@@ -3069,7 +3041,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
+    
     public void guardarSesion() {
         if (this.uriEntrada == null) {
             return;
@@ -3223,14 +3195,14 @@ public class MainActivity extends Activity implements View.OnClickListener, Seek
         }
     }
 
-    @Override // android.app.Activity
+    @Override 
     protected void onPause() {
         guardarSesion();
         guardarEnMemoria();
         super.onPause();
     }
 
-    @Override // android.app.Activity
+    @Override 
     protected void onDestroy() {
         this.hilo.removeCallbacks(this.latido);
         pararTodo();

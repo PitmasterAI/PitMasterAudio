@@ -24,13 +24,11 @@ for i in range(nsec):
     vsize, vaddr, rawsize, rawptr = struct.unpack_from("<IIII", d, o + 8)
     secs.append((name, vaddr, max(vsize, rawsize), rawptr))
 
-
 def off(rva):
     for name, vaddr, size, rawptr in secs:
         if vaddr <= rva < vaddr + size:
             return rawptr + (rva - vaddr)
     raise ValueError(hex(rva))
-
 
 print("\n--- recursos PE ---")
 base = off(rva_res)
@@ -50,7 +48,7 @@ for i in range(nname + nid):
         sub = base + (offv - HIGH)
         ns, ni = struct.unpack_from("<HH", d, sub + 12)
         total = ns + ni
-        # identificar el primer hijo (nombre o ID)
+
         first = "?"
         if total:
             cnm, coff = struct.unpack_from("<II", d, sub + 16)

@@ -1,17 +1,5 @@
-/* Lanzador de PitMasterAudio para Windows.
- *
- * Hace lo mismo que un AppImage: se abre, arranca el panel, muestra la ventana y,
- * cuando se cierra la ventana, se para todo.
- *
- *   1. Arranca python\python.exe app\app.py sin consola.
- *   2. Espera a que el panel responda en 127.0.0.1:5077.
- *   3. Abre la ventana del navegador en modo aplicacion (sin barras), con el perfil
- *      dentro de datos\navegador para que sea un proceso propio y se pueda esperar.
- *   4. Al cerrarse esa ventana, termina el python que arrancamos nosotros y sale.
- *
- * Las rutas se montan con lstrcatW (sin printf) para no depender del formato de la
- * librería C de turno. Deja rastro en datos\lanzador.log.
- */
+
+
 #define _UNICODE
 #include <windows.h>
 #include <shellapi.h>
@@ -45,7 +33,6 @@ static void unir(wchar_t *destino, const wchar_t *a, const wchar_t *b)
     lstrcatW(destino, b);
 }
 
-/* connect() a 127.0.0.1:5077; 1 si el panel ya escucha */
 static int panel_responde(void)
 {
     SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -62,11 +49,6 @@ static int panel_responde(void)
     return listo;
 }
 
-/* Lanza un programa y dice si arrancó.
- *
- * Lo que escribe el programa va a un fichero de log: lanzado con CREATE_NO_WINDOW y
- * sin redirección, la salida del panel se perdía y no había forma de ver por qué iba
- * lento ni en qué paso fallaba. */
 static int lanzar(const wchar_t *exe, const wchar_t *argumentos,
                   DWORD banderas, PROCESS_INFORMATION *pi)
 {
@@ -102,10 +84,6 @@ static int lanzar(const wchar_t *exe, const wchar_t *argumentos,
     return bien ? 1 : 0;
 }
 
-/* Los procesos hijos (el del sonido, que abre la tarjeta) NO se mueren al matar solo al
- * padre: sin esto, al cerrar la ventana el audio seguia sonando y el panel trabajando.
- * El job object con KILL_ON_JOB_CLOSE se lleva por delante todo el arbol cuando el
- * lanzador cierra el handle, aunque el lanzador acabe de golpe. */
 static HANDLE g_job = NULL;
 
 static void crear_job(void)
@@ -128,7 +106,7 @@ static void cerrar_todo(void)
         py.hProcess = NULL;
     }
     if (g_job) {
-        /* cierra el job: Windows mata lo que quede vivo dentro (hijos y nietos) */
+        
         CloseHandle(g_job);
         g_job = NULL;
     }
@@ -139,7 +117,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
     WSADATA wsa;
     WSAStartup(MAKEWORD(2, 2), &wsa);
 
-    /* carpeta del programa y rastro para depurar */
+    
     GetModuleFileNameW(NULL, carpeta, MAX_RUTA);
     {
         wchar_t *barra = wcsrchr(carpeta, L'\\');
@@ -151,7 +129,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
     anotar(L"--- arranque");
     anotar(carpeta);
 
-    /* entorno del panel */
+    
     SetEnvironmentVariableW(L"PUERTO", PUERTO_TXT);
     SetEnvironmentVariableW(L"HOST", L"127.0.0.1");
     {
@@ -169,7 +147,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
         return 1;
     }
 
-    /* 1. el servidor */
+    
     {
         wchar_t app[MAX_RUTA];
         unir(app, carpeta, L"\\app\\app.py");
@@ -184,7 +162,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
         if (g_job) AssignProcessToJobObject(g_job, py.hProcess);
     }
 
-    /* 2. esperar a que responda (el primer arranque carga numpy: hasta 60 s) */
+    
     {
         int listo = 0;
         for (int i = 0; i < 600; i++) {
@@ -194,7 +172,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
         anotar(listo ? L"panel respondiendo" : L"AVISO: el panel no respondio a tiempo");
     }
 
-    /* 3. la ventana propia (WebView2), igual que la del AppImage */
+    
     {
         int cerrada = 0;
         wchar_t ventana[MAX_RUTA];
@@ -217,7 +195,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
                 GetExitCodeProcess(nav.hProcess, &codigo);
                 CloseHandle(nav.hProcess);
                 CloseHandle(nav.hThread);
-                /* si se cierra al instante es que no hay WebView2 (o falló): plan B */
+                
                 if (codigo != 2 && codigo != 3 && vivida > 3000) {
                     cerrada = 1;
                 } else {
@@ -227,7 +205,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
         }
 
         if (!cerrada) {
-            /* plan B: navegador en modo aplicacion (o Firefox, o el del sistema) */
+            
             wchar_t perfil[MAX_RUTA], argumentos[4096];
             unir(perfil, carpeta, L"\\datos\\navegador");
             lstrcpynW(argumentos, L"--app=" URL L" --window-size=1180,900 "
@@ -279,7 +257,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
         }
     }
 
-    /* 4. al cerrar la ventana, todo para */
+    
     anotar(L"cerrando: se para el panel");
     cerrar_todo();
     anotar(L"--- fin");

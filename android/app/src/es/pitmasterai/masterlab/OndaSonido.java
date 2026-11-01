@@ -9,7 +9,6 @@ import android.graphics.Shader;
 import android.view.MotionEvent;
 import android.view.View;
 
-/* loaded from: classes.dex */
 public class OndaSonido extends View {
     private AlTocar escucha;
     private float[] picos;
@@ -22,7 +21,7 @@ public class OndaSonido extends View {
     private final Paint pincelTope;
     private float progreso;
 
-    /* loaded from: classes.dex */
+    
     public interface AlTocar {
         void alArrastrar(float f);
 
@@ -80,7 +79,7 @@ public class OndaSonido extends View {
         invalidate();
     }
 
-    @Override // android.view.View
+    @Override 
     protected void onDraw(Canvas canvas) {
         int i;
         float max;
@@ -156,7 +155,7 @@ public class OndaSonido extends View {
         canvas.drawRect(f9 - 1.0f, 0.0f, f9 + 1.0f, f, this.pincelBarra);
     }
 
-    @Override // android.view.View
+    @Override 
     public boolean onTouchEvent(MotionEvent motionEvent) {
         float x = motionEvent.getX() / Math.max(1.0f, getWidth());
         if (x < 0.0f) {

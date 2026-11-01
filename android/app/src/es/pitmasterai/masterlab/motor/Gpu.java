@@ -12,7 +12,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
-/* loaded from: classes.dex */
 public final class Gpu {
     private static final String FRAGMENTO = "#version 300 es\nprecision highp float;\nuniform sampler2D entrada;\nuniform float ganancia;\nout vec4 color;\nvoid main() {\n  vec4 v = texelFetch(entrada, ivec2(int(gl_FragCoord.x), int(gl_FragCoord.y)), 0);\n  color = vec4(v.r * ganancia, v.g * ganancia, 0.0, 1.0);\n}\n";
     private static final String VERTICE = "#version 300 es\nvoid main() {\n  vec2 p = vec2((gl_VertexID == 1) ? 3.0 : -1.0, (gl_VertexID == 2) ? 3.0 : -1.0);\n  gl_Position = vec4(p, 0.0, 1.0);\n}\n";

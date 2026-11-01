@@ -10,10 +10,9 @@ import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-/* loaded from: classes.dex */
 public final class Wav {
 
-    /* loaded from: classes.dex */
+    
     public static final class Datos {
         public final int frecuencia;
         public final float[][] muestras;
@@ -32,13 +31,11 @@ public final class Wav {
         }
     }
 
-    /* JADX WARN: Multi-variable type inference failed */
-    /* JADX WARN: Removed duplicated region for block: B:24:0x00b9 A[Catch: all -> 0x01c9, TryCatch #0 {all -> 0x01c9, blocks: (B:3:0x000b, B:5:0x0013, B:7:0x0022, B:10:0x0038, B:60:0x00ee, B:67:0x0116, B:70:0x015f, B:73:0x011f, B:75:0x012d, B:77:0x014b, B:78:0x014e, B:79:0x015d, B:83:0x0156, B:85:0x0169, B:86:0x017f, B:89:0x0180, B:91:0x0188, B:94:0x0192, B:95:0x0199, B:12:0x0046, B:14:0x0063, B:18:0x00a6, B:21:0x00b2, B:24:0x00b9, B:26:0x00c2, B:30:0x01ac, B:32:0x01b0, B:38:0x00cc, B:50:0x00d4, B:52:0x00d9, B:54:0x00e2, B:58:0x00e6, B:40:0x019a, B:43:0x01a1, B:45:0x01aa, B:99:0x01b9, B:100:0x01c0, B:101:0x01c1, B:102:0x01c8), top: B:2:0x000b }] */
-    /*
-        Code decompiled incorrectly, please refer to instructions dump.
-    */
+    
+    
+    
 
-    /** Lee un WAV (PCM 8/16/24/32 bits o float 32/64) y lo devuelve en float por canal. */
+    
     public static Datos leer(String ruta) throws IOException {
         FileInputStream entrada = new FileInputStream(new File(ruta));
         try {
@@ -155,7 +152,6 @@ public final class Wav {
         }
     }
 
-
     public static void escribir(String str, float[][] fArr, int i) throws IOException {
         FileOutputStream fileOutputStream = new FileOutputStream(new File(str));
         try {
@@ -214,7 +210,7 @@ public final class Wav {
         outputStream.flush();
     }
 
-    /* loaded from: classes.dex */
+    
     public static final class Escritor implements Closeable {
         private final ByteBuffer bloque;
         private final int canales;
@@ -271,7 +267,7 @@ public final class Wav {
             }
         }
 
-        @Override // java.io.Closeable, java.lang.AutoCloseable
+        @Override 
         public void close() throws IOException {
             if (this.bloque.position() > 0) {
                 this.salida.write(this.bloque.array(), 0, this.bloque.position());

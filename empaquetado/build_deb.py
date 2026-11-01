@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-"""Construye el paquete .deb de MasterLab (Debian/Ubuntu)."""
+
 import os, shutil, subprocess, stat, zlib, struct
 
 SRC = os.path.expanduser('~/PitmasterAudio')
@@ -216,9 +215,7 @@ systemctl --global disable pitmasteraudio.service 2>/dev/null || true
 exit 0
 """
 
-
 def png_icon(path, size=192):
-    """Icono simple: fondo negro, círculo magenta y tres barras de ecualizador."""
     cx = cy = size / 2
     r = size * 0.42
     filas = []
@@ -229,7 +226,7 @@ def png_icon(path, size=192):
             d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
             if d < r:
                 px = (18, 18, 22)
-                # barras
+
                 for i, h in enumerate(barra_alto):
                     bx = cx + (i - 1) * size * 0.16
                     bw = size * 0.075
@@ -254,7 +251,6 @@ def png_icon(path, size=192):
     png += chunk(b'IEND', b'')
     open(path, 'wb').write(png)
 
-
 def main():
     if os.path.exists(BUILD):
         shutil.rmtree(BUILD)
@@ -265,24 +261,23 @@ def main():
         os.makedirs(os.path.dirname(p), exist_ok=True)
         return p
 
-    # motor
     for f in ('motor.py', 'dsp.py', 'presets.json', 'aceleracion.py',
               'gpuops.py', 'vk_compute.py', 'paralelo.py'):
         origen_f = os.path.join(SRC, f)
         if os.path.exists(origen_f):
             shutil.copy2(origen_f, dst('opt/pitmasteraudio/' + f))
-    # shaders SPIR-V del motor Vulkan
+
     vkdir = os.path.join(SRC, 'vk')
     if os.path.isdir(vkdir):
         for f in os.listdir(vkdir):
             if f.endswith(('.spv', '.comp')):
                 shutil.copy2(os.path.join(vkdir, f), dst('opt/pitmasteraudio/vk/' + f))
-    # app
+
     os.makedirs(os.path.join(BUILD, 'opt/pitmasteraudio/app/templates'), exist_ok=True)
     os.makedirs(os.path.join(BUILD, 'opt/pitmasteraudio/app/static'), exist_ok=True)
     shutil.copy2(os.path.join(APP, 'app.py'), dst('opt/pitmasteraudio/app/app.py'))
     shutil.copy2(os.path.join(APP, 'analiza.py'), dst('opt/pitmasteraudio/app/analiza.py'))
-    # motor de sonido propio del panel (un solo flujo de salida, sin cortes al cambiar)
+
     shutil.copy2(os.path.join(APP, 'audio_nativo.py'), dst('opt/pitmasteraudio/app/audio_nativo.py'))
     shutil.copy2(os.path.join(APP, 'audio_proceso.py'), dst('opt/pitmasteraudio/app/audio_proceso.py'))
     shutil.copy2(os.path.join(APP, 'templates/index.html'), dst('opt/pitmasteraudio/app/templates/index.html'))
@@ -290,9 +285,6 @@ def main():
         shutil.copy2(os.path.join(APP, 'static', f), dst('opt/pitmasteraudio/app/static/' + f))
     shutil.copy2(os.path.join(APP, 'README.md'), dst('opt/pitmasteraudio/app/README.md'))
 
-    # sounddevice embebido: el paquete python3-sounddevice no existe en todas las
-    # distros (en pop-os no está) y sin él el panel se quedaba sin sonido propio.
-    # Solo necesita libportaudio2, que sí va como dependencia.
     vd_app = os.path.join(BUILD, 'opt/pitmasteraudio/app/_vendor')
     os.makedirs(vd_app, exist_ok=True)
     for f in ('sounddevice.py', '_sounddevice.py'):
@@ -300,7 +292,6 @@ def main():
         if os.path.exists(origen_sd):
             shutil.copy2(origen_sd, os.path.join(vd_app, f))
 
-    # pyloudnorm embebido (no está en apt)
     vd = os.path.join(BUILD, 'opt/pitmasteraudio/app/_vendor/pyloudnorm')
     os.makedirs(vd, exist_ok=True)
     origen = os.path.join(VENV, 'lib/python3.11/site-packages/pyloudnorm')
@@ -308,14 +299,12 @@ def main():
         if f.endswith('.py'):
             shutil.copy2(os.path.join(origen, f), os.path.join(vd, f))
 
-    # ventana propia (GTK + WebKit): el panel se abre sin navegador
     for origen_v in (os.path.join(SRC, 'ventana.py'),
                      os.path.expanduser('~/appimage-build/ventana.py')):
         if os.path.exists(origen_v):
             shutil.copy2(origen_v, dst('opt/pitmasteraudio/ventana.py'))
             break
 
-    # lanzador, unidad, escritorio, icono
     p = dst('usr/bin/pitmasteraudio')
     open(p, 'w').write(LAUNCHER)
     os.chmod(p, 0o755)
@@ -326,16 +315,15 @@ def main():
         os.makedirs(os.path.dirname(destino), exist_ok=True)
         real = os.path.join(DIST, 'iconos', f'icono-{tam}.png')
         if os.path.exists(real):
-            shutil.copy2(real, destino)          # icono bueno, el mismo que la APK
+            shutil.copy2(real, destino)
         else:
             png_icon(destino, tam)
-    # metadatos para catálogos de software (GNOME Software, KDE Discover…)
+
     open(dst('usr/share/metainfo/es.pitmasterai.PitMasterAudio.appdata.xml'), 'w', encoding='utf-8').write(APPDATA)
     open(dst('usr/share/doc/masterlab/copyright'), 'w', encoding='utf-8').write(
         'PitMasterAudio (PitmasterAI) — masterizacion de audio en local.\n'
         'Todos los ajustes son de elaboracion propia.\n')
 
-    # control
     open(dst('DEBIAN/control'), 'w').write(CONTROL)
     for nombre, texto in (('postinst', POSTINST), ('prerm', PRERM)):
         p = dst('DEBIAN/' + nombre)
@@ -350,7 +338,6 @@ def main():
     print(r.stdout.strip() or r.stderr.strip())
     if os.path.exists(DEB):
         print(f'OK -> {DEB}  ({os.path.getsize(DEB)/1024:.0f} KB)')
-
 
 if __name__ == '__main__':
     main()

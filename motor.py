@@ -1,25 +1,11 @@
-#!/usr/bin/env python3
-"""
-Motor de masterizado: cadena completa de procesado con 25 ajustes propios.
 
-Uso:
-  python motor.py entrada.wav --preset universal -o salida.wav
-  python motor.py entrada.mp3 -p fuego -i 1.2        # intensidad 120%
-  python motor.py --list
-
-Las curvas de cada ajuste estan calibradas sobre pares de audio
-(original/masterizado) y afinadas con el bucle de calibracion.
-"""
 import argparse, json, os, sys
 from concurrent.futures import ThreadPoolExecutor
 import threading
 
 import numpy as np
 
-# Lo que la cadena ya ha medido al terminar (sonoridad conseguida): el panel lo
-# reaprovecha para las fichas en vez de volver a medir la señal entera.
 _info = threading.local()
-
 
 def ultima_medida():
     return dict(getattr(_info, 'datos', {}) or {})
@@ -36,18 +22,14 @@ except Exception:
 
 PRESETS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'presets.json')
 
-# bucle de sonoridad: cuántas vueltas y con qué margen se da por bueno
 VUELTAS_SONORIDAD = 8
 MARGEN_LUFS = 0.12
-
 
 def load_presets():
     with open(PRESETS_FILE) as f:
         return json.load(f)
 
-
 def curve_to_bands(curve, sr, q=4.32, gain_scale=1.0, max_gain=15.0):
-    """Convierte [(f, dB), ...] en una cascada de peaking filters."""
     bands = []
     for f, g in curve:
         if f <= 25:
@@ -59,9 +41,7 @@ def curve_to_bands(curve, sr, q=4.32, gain_scale=1.0, max_gain=15.0):
         bands.append(dict(type='peak', f=float(f), gain=float(np.clip(g, -max_gain, max_gain)*gain_scale), q=q))
     return bands
 
-
 def compensate(bands, curve, sr, iters=2):
-    """Ajusta las ganancias para que la cascada reproduzca la curva pedida."""
     freqs = np.array([c[0] for c in curve], dtype=np.float64)
     target = np.array([c[1] for c in curve], dtype=np.float64)
     work = [dict(b) for b in bands]
@@ -72,13 +52,7 @@ def compensate(bands, curve, sr, iters=2):
             b['gain'] = float(np.clip(b['gain'] + e, -18.0, 18.0))
     return work
 
-
 def hilos_cpu():
-    """Hilos que usa UN trabajo de CPU.
-
-    Se reparten los núcleos entre los trabajos que haya a la vez (MASTERLAB_TRABAJOS_CPU
-    lo pone el panel): así dos trabajos de CPU no se pisan pidiendo 12 hilos cada uno.
-    """
     try:
         nucleos = os.cpu_count() or 1
     except Exception:
@@ -89,13 +63,7 @@ def hilos_cpu():
         trabajos = 1
     return max(1, min(12, (nucleos - 1) // trabajos))
 
-
 def troceado(func, y, sr, solape_s=2.0, hilos=None):
-    """Aplica `func` a trozos en paralelo: mismo resultado, varios hilos a la vez.
-
-    Cada trozo lleva `solape_s` segundos de contexto por delante y por detrás que se
-    tiran al empalmar, para que los filtros lleguen con el estado ya asentado.
-    """
     n = int(hilos or hilos_cpu())
     total = len(y)
     solape = int(sr * solape_s)
@@ -104,9 +72,6 @@ def troceado(func, y, sr, solape_s=2.0, hilos=None):
     trozo = max(2 * solape, total // n)
     cortes = list(range(0, total, trozo))
 
-    # el motor elegido es POR HILO: los trozos nacen en otros hilos y sin esto se
-    # quedaban sin modo y probaban la GPU aunque este trabajo fuera el de CPU
-    # (cada etapa pagaba el viaje a la tarjeta para nada).
     modo_padre = None
     try:
         import gpuops as _gpuops
@@ -134,16 +99,14 @@ def troceado(func, y, sr, solape_s=2.0, hilos=None):
         salida[ini:fin] = datos[ini - desde:ini - desde + (fin - ini)]
     return salida
 
-
 def chain(x, sr, preset, intensity=1.0, verbose=False,
           loudness_mode=None, input_gain_db=None, ceiling_db=None):
-    """Aplica la cadena completa de un preset a x (n, canales)."""
     P = preset
     i = float(intensity)
     y = x.astype(np.float64, copy=True)
 
-    y = y - y.mean(axis=0, keepdims=True)      # continua fuera, una sola vez para toda la señal
-    # la saturación normaliza al pico de TODA la señal: se mide una vez y se reparte
+    y = y - y.mean(axis=0, keepdims=True)
+
     picos_sat = None
     _sat = P.get('sat', {})
     if _sat and float(_sat.get('mix', 0)) > 0:
@@ -157,21 +120,17 @@ def chain(x, sr, preset, intensity=1.0, verbose=False,
 
     return _final(y, P, sr, verbose, loudness_mode, input_gain_db, ceiling_db)
 
-
 def _color_etapas(y, P, sr, i, picos_sat=None):
-    """Etapas 1-5: lo que se puede repartir en trozos (todo menos sonoridad)."""
-    # 1. limpieza de subsonicos / DC
+
     hp = P.get('hpf_hz', 0)
     if hp:
         b, a = dsp._rbj('highpass', sr, float(hp), 0, 0.707)
         y = signal.lfilter(b, a, y, axis=0)
 
-    # 2. EQ tonal (curva medida de Referencia, escalada por intensidad)
     curve = [(float(f), float(g)) for f, g in P['eq']]
     bands = compensate(curve_to_bands(curve, sr, gain_scale=i), curve, sr)
     y = dsp.eq_apply(y, sr, bands)
 
-    # 3. compresion multibanda
     mb = P.get('comp', {})
     if mb:
         cs = float(P.get('comp_scale', 1.0))
@@ -193,7 +152,6 @@ def _color_etapas(y, P, sr, i, picos_sat=None):
                                       knee_db=float(st.get('knee', 6))))
         y = sum(parts)
 
-    # 4. saturacion
     sat = P.get('sat', {})
     if sat and sat.get('mix', 0) > 0:
         y = dsp.saturate(y, sr, drive_db=float(sat.get('drive', 0)) * i,
@@ -202,7 +160,6 @@ def _color_etapas(y, P, sr, i, picos_sat=None):
                          tone_hz=float(sat.get('tone', 16000)),
                          picos=picos_sat)
 
-    # 5. imagen estereo + reverb
     w = P.get('width', {})
     if w:
         y = dsp.stereo_width(y, side_gain_db=float(w.get('side_db', 0)) * i,
@@ -214,16 +171,14 @@ def _color_etapas(y, P, sr, i, picos_sat=None):
 
     return y
 
-
 def _envolvente(y, sr):
-    """Envolvente de pico real de toda la señal, una sola vez por ajuste."""
     try:
         en_cpu = dsp.gpuops is not None and dsp.gpuops.en_cpu()
     except Exception:
         en_cpu = True
     if not en_cpu:
         return dsp._tp_env(y, sr)
-    # por muestras vecinas: se reparte en trozos con solape mínimo (la salida es mono)
+
     total = len(y)
     hilos = hilos_cpu()
     solape = max(8, int(sr * 0.05))
@@ -246,9 +201,7 @@ def _envolvente(y, sr):
         env[ini:fin] = datos[ini - desde:ini - desde + (fin - ini)]
     return env
 
-
 def _troceado_con_env(func, y, env, sr, escala, hilos, solape_s=1.0):
-    """Como `troceado`, pero pasando a cada trozo su parte de la envolvente global."""
     total = len(y)
     solape = int(sr * solape_s)
     n = max(1, hilos)
@@ -270,9 +223,7 @@ def _troceado_con_env(func, y, env, sr, escala, hilos, solape_s=1.0):
         salida[ini:fin] = datos[ini - desde:ini - desde + (fin - ini)]
     return salida
 
-
 def _limitar(y, sr, P, techo, env=None, escala=1.0):
-    """Limitador. Con `env` (envolvente sin escalar) se ahorra recalcularla."""
     def _uno(z, e=None):
         return dsp.limiter(z, sr, ceiling_db=techo,
                            lookahead_ms=float(P.get('lookahead_ms', 5.0)),
@@ -288,13 +239,11 @@ def _limitar(y, sr, P, techo, env=None, escala=1.0):
         return _troceado_con_env(_uno, y, env, sr, escala, n)
     return _uno(y, env)
 
-
 def _final(y, P, sr, verbose=False, loudness_mode=None, input_gain_db=None, ceiling_db=None):
-    """Etapa 6: sonoridad y limitador, siempre entera (depende de toda la señal)."""
     if loudness_mode == 'none':
         return y
     if loudness_mode == 'input':
-        # modelo de Referencia: ganancia de entrada calculada + limitador, sin objetivo de salida
+
         g = float(input_gain_db if input_gain_db is not None else 0.0)
         yy = _limitar(y * (10 ** (g / 20.0)), sr, P,
                       float(ceiling_db if ceiling_db is not None else 0.0))
@@ -302,15 +251,13 @@ def _final(y, P, sr, verbose=False, loudness_mode=None, input_gain_db=None, ceil
             print(f'  [entrada {g:+.2f} dB, techo {ceiling_db if ceiling_db is not None else 0.0} dBTP]')
         return yy
 
-    # modelo clasico: normalizacion de sonoridad + limitador (converge al objetivo LUFS)
     target = float(P.get('lufs', -13.0))
     ceiling = float(ceiling_db if ceiling_db is not None else P.get('ceiling_db', -0.3))
     gain_db = 0.0
     yy = y
-    # la envolvente de pico real no depende de la ganancia: se calcula una vez
+
     env_base = _envolvente(y, sr)
-    # la sonoridad integrada es lineal en la ganancia (LUFS(y·g) = LUFS(y) + 20·log10 g):
-    # se mide una sola vez y se deduce el resto, en vez de pasar pyloudnorm por señal
+
     lufs_y0 = dsp.measure_lufs(y, sr)
     for _ in range(VUELTAS_SONORIDAD):
         cur = lufs_y0 + gain_db
@@ -326,7 +273,6 @@ def _final(y, P, sr, verbose=False, loudness_mode=None, input_gain_db=None, ceil
         gain_db += (target - got) * 0.9
     return yy
 
-
 def read_audio(path):
     if path.lower().endswith(('.m4a', '.mp3', '.aac', '.ogg', '.opus')):
         import subprocess, tempfile
@@ -338,7 +284,6 @@ def read_audio(path):
     x, sr = sf.read(path, dtype='float32', always_2d=True)
     return x.astype(np.float64), sr
 
-
 def write_audio(path, x, sr, bits=24):
     if path.lower().endswith(('.wav', '.flac')):
         sf.write(path, np.clip(x, -1, 1), sr, subtype='PCM_24' if path.endswith('.wav') else 'PCM_24')
@@ -347,7 +292,6 @@ def write_audio(path, x, sr, bits=24):
         tmp = open('/tmp/.bl_out.wav', 'wb')
         sf.write(tmp.name, np.clip(x, -1, 1), sr, subtype='PCM_24')
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', tmp.name, '-b:a', '320k', path], check=True)
-
 
 def main():
     ap = argparse.ArgumentParser(description='Masterizacion local estilo Referencia')
@@ -389,7 +333,6 @@ def main():
             out = a.output or (os.path.splitext(path)[0] + f'_{key}.wav')
         write_audio(out, y, sr)
         print(f"OK -> {out}  ({len(y)/sr:.1f}s, LUFS {dsp.measure_lufs(y, sr):.2f})")
-
 
 if __name__ == '__main__':
     main()
