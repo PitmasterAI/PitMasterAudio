@@ -1,5 +1,3 @@
-
-
 #define _UNICODE
 #include <windows.h>
 #include <shellapi.h>
@@ -47,6 +45,25 @@ static int panel_responde(void)
         closesocket(s);
     }
     return listo;
+}
+
+static void asegurar_preguntar_descargas(const wchar_t *perfil)
+{
+    wchar_t carpeta_defecto[MAX_RUTA],preferencias[MAX_RUTA];
+    static const char json[] = "{\"download\":{\"prompt_for_download\":true}}";
+    HANDLE f;
+    DWORD escrito = 0;
+
+    unir(carpeta_defecto, perfil, L"\\Default");
+    CreateDirectoryW(perfil, NULL);
+    CreateDirectoryW(carpeta_defecto, NULL);
+    unir(preferencias, carpeta_defecto, L"\\Preferences");
+    if (GetFileAttributesW(preferencias) != INVALID_FILE_ATTRIBUTES) return;
+    f = CreateFileW(preferencias, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+                    FILE_ATTRIBUTE_NORMAL, NULL);
+    if (f == INVALID_HANDLE_VALUE) return;
+    WriteFile(f, json, (DWORD)(sizeof(json) - 1), &escrito, NULL);
+    CloseHandle(f);
 }
 
 static int lanzar(const wchar_t *exe, const wchar_t *argumentos,
@@ -106,8 +123,7 @@ static void cerrar_todo(void)
         py.hProcess = NULL;
     }
     if (g_job) {
-        
-        CloseHandle(g_job);
+                CloseHandle(g_job);
         g_job = NULL;
     }
 }
@@ -117,8 +133,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
     WSADATA wsa;
     WSAStartup(MAKEWORD(2, 2), &wsa);
 
-    
-    GetModuleFileNameW(NULL, carpeta, MAX_RUTA);
+        GetModuleFileNameW(NULL, carpeta, MAX_RUTA);
     {
         wchar_t *barra = wcsrchr(carpeta, L'\\');
         if (barra) *barra = L'\0';
@@ -129,8 +144,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
     anotar(L"--- arranque");
     anotar(carpeta);
 
-    
-    SetEnvironmentVariableW(L"PUERTO", PUERTO_TXT);
+        SetEnvironmentVariableW(L"PUERTO", PUERTO_TXT);
     SetEnvironmentVariableW(L"HOST", L"127.0.0.1");
     {
         wchar_t datos[MAX_RUTA];
@@ -147,8 +161,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
         return 1;
     }
 
-    
-    {
+        {
         wchar_t app[MAX_RUTA];
         unir(app, carpeta, L"\\app\\app.py");
         anotar(L"arrancando el panel");
@@ -162,8 +175,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
         if (g_job) AssignProcessToJobObject(g_job, py.hProcess);
     }
 
-    
-    {
+        {
         int listo = 0;
         for (int i = 0; i < 600; i++) {
             if (panel_responde()) { listo = 1; break; }
@@ -172,8 +184,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
         anotar(listo ? L"panel respondiendo" : L"AVISO: el panel no respondio a tiempo");
     }
 
-    
-    {
+        {
         int cerrada = 0;
         wchar_t ventana[MAX_RUTA];
         unir(ventana, carpeta, L"\\ventana.exe");
@@ -195,8 +206,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
                 GetExitCodeProcess(nav.hProcess, &codigo);
                 CloseHandle(nav.hProcess);
                 CloseHandle(nav.hThread);
-                
-                if (codigo != 2 && codigo != 3 && vivida > 3000) {
+                                if (codigo != 2 && codigo != 3 && vivida > 3000) {
                     cerrada = 1;
                 } else {
                     anotar(L"sin WebView2 en este equipo: se prueba el navegador");
@@ -205,9 +215,9 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
         }
 
         if (!cerrada) {
-            
-            wchar_t perfil[MAX_RUTA], argumentos[4096];
+                        wchar_t perfil[MAX_RUTA], argumentos[4096];
             unir(perfil, carpeta, L"\\datos\\navegador");
+            asegurar_preguntar_descargas(perfil);
             lstrcpynW(argumentos, L"--app=" URL L" --window-size=1180,900 "
                       L"--autoplay-policy=no-user-gesture-required --user-data-dir=\"", 4096);
             lstrcatW(argumentos, perfil);
@@ -257,8 +267,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrev, PWSTR cmd, int mostrar)
         }
     }
 
-    
-    anotar(L"cerrando: se para el panel");
+        anotar(L"cerrando: se para el panel");
     cerrar_todo();
     anotar(L"--- fin");
     WSACleanup();

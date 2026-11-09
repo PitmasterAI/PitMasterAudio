@@ -61,6 +61,12 @@ abrir_ventana() {
   fi
   for NAV in google-chrome-stable google-chrome chromium chromium-browser brave-browser microsoft-edge; do
     if command -v "$NAV" >/dev/null 2>&1; then
+      # el perfil nace pidiendo dónde guardar cada descarga: sin esto Chrome se
+      # guarda el archivo en Descargas y el botón «Descargar» no abre nada
+      mkdir -p "$PERFIL/Default" 2>/dev/null
+      [ -f "$PERFIL/Default/Preferences" ] || \
+        printf '%s' '{"download":{"prompt_for_download":true}}' \
+          > "$PERFIL/Default/Preferences" 2>/dev/null
       INICIO=$(date +%s)
       "$NAV" --app="$URL" --class=PitMasterAudio --window-size=1180,860 \
              --no-first-run --no-default-browser-check \
@@ -83,6 +89,8 @@ abrir_ventana() {
       'user_pref("media.autoplay.blocking_policy", 0);' \
       'user_pref("media.autoplay.block-webaudio", false);' \
       'user_pref("media.autoplay.allow-muted", true);' \
+      'user_pref("browser.download.useDownloadDir", false);' \
+      'user_pref("browser.download.always_ask_before_handling_new_types", true);' \
       'user_pref("browser.shell.checkDefaultBrowser", false);' \
       'user_pref("browser.startup.homepage_override.mstone", "ignore");' \
       'user_pref("datareporting.policy.dataSubmissionEnabled", false);' \
@@ -215,7 +223,9 @@ systemctl --global disable pitmasteraudio.service 2>/dev/null || true
 exit 0
 """
 
+
 def png_icon(path, size=192):
+
     cx = cy = size / 2
     r = size * 0.42
     filas = []
@@ -226,7 +236,6 @@ def png_icon(path, size=192):
             d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
             if d < r:
                 px = (18, 18, 22)
-
                 for i, h in enumerate(barra_alto):
                     bx = cx + (i - 1) * size * 0.16
                     bw = size * 0.075
@@ -251,6 +260,7 @@ def png_icon(path, size=192):
     png += chunk(b'IEND', b'')
     open(path, 'wb').write(png)
 
+
 def main():
     if os.path.exists(BUILD):
         shutil.rmtree(BUILD)
@@ -266,18 +276,15 @@ def main():
         origen_f = os.path.join(SRC, f)
         if os.path.exists(origen_f):
             shutil.copy2(origen_f, dst('opt/pitmasteraudio/' + f))
-
     vkdir = os.path.join(SRC, 'vk')
     if os.path.isdir(vkdir):
         for f in os.listdir(vkdir):
             if f.endswith(('.spv', '.comp')):
                 shutil.copy2(os.path.join(vkdir, f), dst('opt/pitmasteraudio/vk/' + f))
-
     os.makedirs(os.path.join(BUILD, 'opt/pitmasteraudio/app/templates'), exist_ok=True)
     os.makedirs(os.path.join(BUILD, 'opt/pitmasteraudio/app/static'), exist_ok=True)
     shutil.copy2(os.path.join(APP, 'app.py'), dst('opt/pitmasteraudio/app/app.py'))
     shutil.copy2(os.path.join(APP, 'analiza.py'), dst('opt/pitmasteraudio/app/analiza.py'))
-
     shutil.copy2(os.path.join(APP, 'audio_nativo.py'), dst('opt/pitmasteraudio/app/audio_nativo.py'))
     shutil.copy2(os.path.join(APP, 'audio_proceso.py'), dst('opt/pitmasteraudio/app/audio_proceso.py'))
     shutil.copy2(os.path.join(APP, 'templates/index.html'), dst('opt/pitmasteraudio/app/templates/index.html'))
@@ -318,7 +325,6 @@ def main():
             shutil.copy2(real, destino)
         else:
             png_icon(destino, tam)
-
     open(dst('usr/share/metainfo/es.pitmasterai.PitMasterAudio.appdata.xml'), 'w', encoding='utf-8').write(APPDATA)
     open(dst('usr/share/doc/masterlab/copyright'), 'w', encoding='utf-8').write(
         'PitMasterAudio (PitmasterAI) — masterizacion de audio en local.\n'
@@ -338,6 +344,7 @@ def main():
     print(r.stdout.strip() or r.stderr.strip())
     if os.path.exists(DEB):
         print(f'OK -> {DEB}  ({os.path.getsize(DEB)/1024:.0f} KB)')
+
 
 if __name__ == '__main__':
     main()
