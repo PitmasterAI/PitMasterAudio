@@ -11,7 +11,7 @@ RequestExecutionLevel user
 !include "LogicLib.nsh"
 
 !define APPNAME     "PitMasterAudio"
-!define APPVERSION  "1.0"
+!define APPVERSION  "1.0.1"
 !define APIVER4     "1.0.0.0"
 !define PUBLISHER   "PitmasterAI"
 !define APPURL      "https://pitmasterai.es"
@@ -21,7 +21,7 @@ RequestExecutionLevel user
 !define APPSIZE_KB  183668
 
 Name "${APPNAME} ${APPVERSION}"
-OutFile "/home/iaradio/pitmasteraudio-dist/PitMasterAudio-1.0-Setup.exe"
+OutFile "/home/iaradio/pitmasteraudio-dist/PitMasterAudio-1.0.1-Setup.exe"
 InstallDir "$LOCALAPPDATA\Programs\PitMasterAudio"
 InstallDirRegKey HKCU "${UNINSTKEY}" "InstallLocation"
 BrandingText "${APPNAME} ${APPVERSION} - ${PUBLISHER}"

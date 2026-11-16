@@ -207,7 +207,19 @@ try:
             ruta = GLib.filename_from_uri(destino)[0] if destino.startswith('file:') else destino
         except Exception:
             ruta = ''
-        print('descarga guardada en %s' % ruta, file=sys.stderr)
+        tam = 0
+        try:
+            tam = os.path.getsize(ruta) if ruta else 0
+        except OSError:
+            tam = 0
+        if ruta and tam == 0:
+            print('la descarga ha quedado vacía: %s' % ruta, file=sys.stderr)
+            try:
+                os.unlink(ruta)
+            except OSError:
+                pass
+            return
+        print('descarga guardada en %s (%d bytes)' % (ruta, tam), file=sys.stderr)
 
     def _al_fallar_descarga(descarga, error, *_):
         print('la descarga ha fallado: %s' % error, file=sys.stderr)

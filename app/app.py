@@ -127,16 +127,26 @@ def _info_audio(ruta):
     return info
 
 def _a_formato(origen, original, destino, info):
-    ext = info.get('ext') or 'wav'
+    ext = (info.get('ext') or 'wav').lower()
     sr = str(info.get('sr') or 48000)
     bits = info.get('bits') or 0
     bitrate = int(info.get('bitrate') or 0)
     if not os.path.exists(original):
         original = origen
+    base, punto = os.path.splitext(destino)
+    temporal = base + '.parcial' + punto
+    sobrantes = [temporal]
+    if os.path.exists(destino) and os.path.getsize(destino) == 0:
+        sobrantes.append(destino)
+    for sobra in sobrantes:
+        try:
+            os.unlink(sobra)
+        except OSError:
+            pass
     orden = [FFMPEG, '-v', 'error', '-y', '-i', origen]
     if original != origen:
         orden += ['-i', original, '-map', '0:a', '-map_metadata', '1']
-        if info.get('portada'):
+        if info.get('portada') and ext in ('mp3', 'flac', 'm4a', 'mp4', 'aac'):
             orden += ['-map', '1:v?', '-c:v', 'copy']
     if ext == 'mp3':
         orden += ['-c:a', 'libmp3lame', '-b:a', str(bitrate if bitrate >= 96000 else 320000)]
@@ -155,12 +165,19 @@ def _a_formato(origen, original, destino, info):
         orden += ['-ar', sr]
     if int(info.get('canales') or 2) == 1:
         orden += ['-ac', '1']
-    orden += [destino]
+    orden += [temporal]
     try:
         subprocess.run(orden, check=True, timeout=900)
+        if not os.path.exists(temporal) or os.path.getsize(temporal) == 0:
+            raise RuntimeError('la conversion no ha escrito nada')
+        os.replace(temporal, destino)
         return True
     except Exception as e:
         print('[formato] no se pudo escribir %s: %s' % (ext, e), flush=True)
+        try:
+            os.unlink(temporal)
+        except OSError:
+            pass
         return False
 
 def _finito(valor, defecto=0.0):
@@ -998,24 +1015,37 @@ def api_consola():
 def api_descargar(sid):
     j = JOBS.get(sid, {})
     info = j.get('formato') or {}
-
     fmt = (request.args.get('formato') or info.get('ext') or 'wav').lower().lstrip('.')
     if fmt in ('wave', 'wavex'):
         fmt = 'wav'
     marca = j.get('salida_marca')
     p = ruta_entrega(sid, marca, fmt) if marca else os.path.join(OUT, f'{sid}_master.{fmt}')
-    if not os.path.exists(p) and marca:
-
+    if marca:
         wav = ruta_de(sid, marca)
-        if os.path.exists(wav):
-            _a_formato(wav, j.get('original'), p, dict(info, ext=fmt))
-    if not os.path.exists(p):
+        if os.path.exists(p) and os.path.getsize(p) == 0:
+            try:
+                os.unlink(p)
+            except OSError:
+                pass
+        if not os.path.exists(p) and os.path.exists(wav) and os.path.getsize(wav) > 0:
+            if not _a_formato(wav, j.get('original'), p, dict(info, ext=fmt)):
+                p = None
+        if p is None or not os.path.exists(p) or os.path.getsize(p) == 0:
+            if os.path.exists(wav) and os.path.getsize(wav) > 0:
+                p, fmt = wav, 'wav'
+            else:
+                abort(404)
+    if not os.path.exists(p) or os.path.getsize(p) == 0:
         abort(404)
     j = JOBS.get(sid, {})
     base = (j.get('nombre') or 'tema').rsplit('.', 1)[0].strip()
     ajuste = analiza.nombre(j.get('preset') or '') or 'Master'
     seguro = ''.join(c if (c.isalnum() or c in ' ._-') else '_' for c in f'{base}_{ajuste}')
-    return send_file(p, as_attachment=True, download_name=f'{seguro}.{fmt}')
+    print('[descarga] %s %s (%d bytes)' % (sid, os.path.basename(p), os.path.getsize(p)), flush=True)
+    respuesta = send_file(p, as_attachment=True, download_name=f'{seguro}.{fmt}',
+                          conditional=False, max_age=0)
+    respuesta.headers['Cache-Control'] = 'no-store'
+    return respuesta
 
 if __name__ == '__main__':
     host = os.environ.get('HOST', '127.0.0.1')

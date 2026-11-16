@@ -5,9 +5,9 @@ SRC = os.path.expanduser('~/PitmasterAudio')
 APP = os.path.join(SRC, 'app')
 VENV = os.path.expanduser('~/audio-master-venv')
 DIST = os.path.expanduser('~/pitmasteraudio-dist')
-BUILD = os.path.join(DIST, 'pitmasteraudio_1.0_all')
-DEB = os.path.join(DIST, 'pitmasteraudio_1.0_all.deb')
-VERSION = '1.0'
+BUILD = os.path.join(DIST, 'pitmasteraudio_1.0.1_all')
+DEB = os.path.join(DIST, 'pitmasteraudio_1.0.1_all.deb')
+VERSION = '1.0.1'
 
 CONTROL = f"""Package: pitmasteraudio
 Version: {VERSION}
@@ -182,7 +182,7 @@ APPDATA = f"""<?xml version="1.0" encoding="UTF-8"?>
     <binary>pitmasteraudio</binary>
   </provides>
   <releases>
-    <release version="{VERSION}" date="2026-10-30"/>
+    <release version="{VERSION}" date="2026-11-16"/>
   </releases>
   <content_rating type="oars-1.1"/>
 </component>

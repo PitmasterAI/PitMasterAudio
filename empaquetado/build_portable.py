@@ -5,7 +5,7 @@ import time
 
 DIST = os.path.expanduser('~/pitmasteraudio-dist')
 PAYLOAD = os.path.expanduser('~/win-portable/PitMasterAudio-Windows')
-VERSION = '1.0'
+VERSION = '1.0.1'
 NSI = os.path.join(DIST, 'nsis', 'PitMasterAudioPortable.nsi')
 SALIDA = os.path.join(DIST, f'PitMasterAudio-{VERSION}-Portable.exe')
 

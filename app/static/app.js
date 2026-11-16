@@ -776,7 +776,7 @@ async function iniciar() {
   
   
   S.nativo = await REPRO.init();
-  AVISAR({ tipo: 'arranque', version: '1.0', tieneSesion: !!S.id, sonidoPropio: S.nativo,
+  AVISAR({ tipo: 'arranque', version: '1.0.1', tieneSesion: !!S.id, sonidoPropio: S.nativo,
            idioma: IDIOMA.valor, navegador: navigator.language });
   
   ['#btnIdiomaEs', '#btnIdiomaEn'].forEach((sel) => {
@@ -860,9 +860,12 @@ async function iniciar() {
   setInterval(latirSonido, 250);
 
   $('#btnDescargar').addEventListener('click', (ev) => {
-    if (!$('#btnDescargar').getAttribute('href') || $('#btnDescargar').getAttribute('href') === '#') {
+    const href = $('#btnDescargar').getAttribute('href');
+    if (!href || href === '#') {
       ev.preventDefault();
+      return;
     }
+    $('#btnDescargar').href = href.split('?')[0] + '?t=' + Date.now();
   });
 
   REPRODUCTORES.forEach((sel) => {

@@ -23,7 +23,7 @@ El motor principal va en **CPU** y el secundario en **GPU**, así que una pista 
 
 | | |
 |---|---|
-| **Versión** | 1.0 |
+| **Versión** | 1.0.1 |
 | **Plataformas** | Linux (deb, AppImage) · Windows 10/11 (instalador, portable, ZIP) · Android 7+ (APK) |
 | **Idiomas** | Español e inglés (detecta el idioma la primera vez y lo recuerda) |
 | **Dependencias** | Ninguna cuenta, ninguna nube, ninguna suscripción |
@@ -88,7 +88,7 @@ Vulkan, para que funcione sin conexión y sin gastar batería en un servicio web
 
 ```bash
 # Debian/Ubuntu/Pop!_OS
-sudo apt install ./pitmasteraudio_1.0_all.deb
+sudo apt install ./pitmasteraudio_1.0.1_all.deb
 
 # o sin instalar nada
 chmod +x PitMasterAudio-x86_64.AppImage && ./PitMasterAudio-x86_64.AppImage
@@ -98,10 +98,10 @@ Abre el panel en `http://127.0.0.1:5077`.
 
 **Windows**
 
-- `PitMasterAudio-1.0-Setup.exe` — instalador normal.
-- `PitMasterAudio-1.0-Portable.exe` — un solo fichero, no instala nada (se
+- `PitMasterAudio-1.0.1-Setup.exe` — instalador normal.
+- `PitMasterAudio-1.0.1-Portable.exe` — un solo fichero, no instala nada (se
   descomprime en `%LOCALAPPDATA%`).
-- `PitMasterAudio-1.0-Windows-portable.zip` — la carpeta suelta, con el `.exe`
+- `PitMasterAudio-1.0.1-Windows-portable.zip` — la carpeta suelta, con el `.exe`
   dentro.
 
 La ventana es propia (WebView2), sin barra de direcciones. Al cerrarla se cierra
@@ -166,7 +166,7 @@ minute track takes seconds, not minutes.
 
 | | |
 |---|---|
-| **Version** | 1.0 |
+| **Version** | 1.0.1 |
 | **Platforms** | Linux (deb, AppImage) · Windows 10/11 (installer, portable, ZIP) · Android 7+ (APK) |
 | **Languages** | Spanish and English (detected on first run, then remembered) |
 | **Requirements** | No account, no cloud, no subscription |
@@ -222,7 +222,7 @@ Vulkan, so it works offline and does not drain the battery on a web service.
 **Linux**
 
 ```bash
-sudo apt install ./pitmasteraudio_1.0_all.deb
+sudo apt install ./pitmasteraudio_1.0.1_all.deb
 # or run it without installing
 chmod +x PitMasterAudio-x86_64.AppImage && ./PitMasterAudio-x86_64.AppImage
 ```
@@ -231,10 +231,10 @@ The panel opens at `http://127.0.0.1:5077`.
 
 **Windows**
 
-- `PitMasterAudio-1.0-Setup.exe` — regular installer.
-- `PitMasterAudio-1.0-Portable.exe` — single file, nothing installed (it unpacks to
+- `PitMasterAudio-1.0.1-Setup.exe` — regular installer.
+- `PitMasterAudio-1.0.1-Portable.exe` — single file, nothing installed (it unpacks to
   `%LOCALAPPDATA%`).
-- `PitMasterAudio-1.0-Windows-portable.zip` — the plain folder with the `.exe` inside.
+- `PitMasterAudio-1.0.1-Windows-portable.zip` — the plain folder with the `.exe` inside.
 
 The window is its own (WebView2), with no address bar. Closing it shuts everything
 down, including the audio process.
@@ -287,3 +287,4 @@ Source available for reading, study and verification. All rights reserved; see
 ---
 
 Hecho por [PitmasterAI](https://www.pitmasterai.es) · Made by [PitmasterAI](https://www.pitmasterai.es)
+

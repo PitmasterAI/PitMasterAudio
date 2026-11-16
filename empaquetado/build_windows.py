@@ -10,7 +10,7 @@ BASE = os.path.expanduser('~/win-portable')
 DIST = os.path.expanduser('~/pitmasteraudio-dist')
 SRC = os.path.expanduser('~/PitmasterAudio')
 W = os.path.join(BASE, 'PitMasterAudio-Windows')
-ZIP = os.path.join(DIST, 'PitMasterAudio-1.0-Windows-portable.zip')
+ZIP = os.path.join(DIST, 'PitMasterAudio-1.0.1-Windows-portable.zip')
 PY_URL = 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip'
 PAQUETES = ['numpy', 'scipy', 'soundfile', 'flask', 'pyloudnorm', 'cffi', 'pycparser', 'sounddevice']
 
